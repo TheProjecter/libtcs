@@ -1,0 +1,9 @@
+#summary Homepage of the libtcs project.
+
+= Introduction =
+
+Libtcs is a system independent C library for reading, creating and modifying [http://www.tcsub.com/tcs/spec.htm TCS] files. It is part of the teco project.
+
+= Comment =
+
+You can add any comment about libtcs here.
