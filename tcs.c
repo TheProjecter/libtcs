@@ -14,33 +14,33 @@
 
 
 TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_Open_Type type) {
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     if (tcs_open_existing == type) {
         pFile->fp = fopen(filename, "rb");    /* file should open in binary mode */
-        if (!pFile->fp) return error_file_cant_open;
+        if (!pFile->fp) return tcs_error_file_cant_open;
     } else if (tcs_create_new == type) {
         pFile->fp = fopen(filename, "wb");    /* file should open in binary mode */
-        if (!pFile->fp) return error_file_cant_create;
+        if (!pFile->fp) return tcs_error_file_cant_create;
     }
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_close_file(TCS_pFile pFile) {
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     fclose(pFile->fp);
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_read(TCS_pFile pFile, tcs_unit *buf, tcs_u32 count) {
-    if (!pFile) return error_null_pointer;
-    if (fread(buf, sizeof(tcs_unit), count, pFile->fp) != count) return error_file_while_reading;
-    return error_success;
+    if (!pFile) return tcs_error_null_pointer;
+    if (fread(buf, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_reading;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_write(TCS_pFile pFile, const tcs_unit *buf, tcs_u32 count) {
-    if (!pFile) return error_null_pointer;
-    if (fwrite(buf, sizeof(tcs_unit), count, pFile->fp) != count) return error_file_while_writing;
-    return error_success;
+    if (!pFile) return tcs_error_null_pointer;
+    if (fwrite(buf, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_writing;
+    return tcs_error_success;
 }
 
 tcs_bool libtcs_check_signature(const TCS_pFile pFile) {
@@ -56,7 +56,7 @@ tcs_bool libtcs_check_signature(const TCS_pFile pFile) {
 }
 
 TCS_Error_Code libtcs_set_file_position_indicator(TCS_pFile pFile, TCS_File_Position_Indicator position) {
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     if (tcs_fpi_set == position) {
         fseek(pFile->fp, 0, SEEK_SET);
     } else if (tcs_fpi_header == position) {
@@ -64,11 +64,11 @@ TCS_Error_Code libtcs_set_file_position_indicator(TCS_pFile pFile, TCS_File_Posi
     } else {
         fseek(pFile->fp, 0, SEEK_END);
     }
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_set_header(TCS_pHeader pHeader, tcs_unit flag, tcs_u16 width, tcs_u16 height, tcs_unit minTime, tcs_unit maxTime, tcs_unit chunks, tcs_unit fpsNumerator, tcs_unit fpsDenominator) {
-    if (!pHeader) return error_null_pointer;
+    if (!pHeader) return tcs_error_null_pointer;
     memset(pHeader, 0, sizeof(TCS_Header));
     pHeader->signature = TCS_SIGNATURE;
     pHeader->version = TCS_VERSION;
@@ -79,12 +79,12 @@ TCS_Error_Code libtcs_set_header(TCS_pHeader pHeader, tcs_unit flag, tcs_u16 wid
     pHeader->chunks = chunks;
     pHeader->fpsNumerator = fpsNumerator;
     pHeader->fpsDenominator = fpsDenominator;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_read_header(TCS_pFile pFile, TCS_pHeader pHeader, tcs_bool keepPosition) {
     fpos_t position;
-    if (!pFile || !pHeader) return error_null_pointer;
+    if (!pFile || !pHeader) return tcs_error_null_pointer;
     if (keepPosition) {
         fgetpos(pFile->fp, &position);    /* remember file position indicator */
         fseek(pFile->fp, 0, SEEK_SET);
@@ -94,76 +94,76 @@ TCS_Error_Code libtcs_read_header(TCS_pFile pFile, TCS_pHeader pHeader, tcs_bool
         fseek(pFile->fp, 0, SEEK_SET);
         fread(pHeader, sizeof(tcs_unit), sizeof(TCS_Header) >> 2, pFile->fp);
     }
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_write_header(TCS_pFile pFile, const TCS_pHeader pHeader, tcs_bool keepPosition) {
     int count;
     fpos_t position;
-    if (!pFile || !pHeader) return error_null_pointer;
+    if (!pFile || !pHeader) return tcs_error_null_pointer;
     count = sizeof(TCS_Header) >> 2;
     if (keepPosition) {
         fgetpos(pFile->fp, &position);    /* remember file position indicator */
         fseek(pFile->fp, 0, SEEK_SET);
-        if (fwrite(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) return error_file_while_writing;
+        if (fwrite(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_writing;
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
     } else {
         fseek(pFile->fp, 0, SEEK_SET);
-        if (fwrite(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) return error_file_while_writing;
+        if (fwrite(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_writing;
     }
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_read_raw_chunks(TCS_pFile pFile, TCS_pRawChunk pRawChunk, tcs_u32 count) {
-    if (!pFile || !pRawChunk) return error_null_pointer;
-    if (fread(pRawChunk, sizeof(TCS_RawChunk), count, pFile->fp) != count) return error_file_while_reading;
-    return error_success;
+    if (!pFile || !pRawChunk) return tcs_error_null_pointer;
+    if (fread(pRawChunk, sizeof(TCS_RawChunk), count, pFile->fp) != count) return tcs_error_file_while_reading;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_write_raw_chunks(TCS_pFile pFile, const TCS_pRawChunk pRawChunk, tcs_u32 count) {
-    if (!pFile || !pRawChunk) return error_null_pointer;
-    if (fwrite(pRawChunk, sizeof(TCS_RawChunk), count, pFile->fp) != count) return error_file_while_writing;
-    return error_success;
+    if (!pFile || !pRawChunk) return tcs_error_null_pointer;
+    if (fwrite(pRawChunk, sizeof(TCS_RawChunk), count, pFile->fp) != count) return tcs_error_file_while_writing;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_alloc_chunk(TCS_pChunk pChunk, tcs_u32 count) {
-    if (!pChunk) return error_null_pointer;
+    if (!pChunk) return tcs_error_null_pointer;
     pChunk->pos_and_color = (tcs_unit *)malloc(count * (sizeof(tcs_unit) << 1));    /* every pos_and_color takes up 2 tcs_unit */
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_free_chunk(TCS_pChunk pChunk) {
-    if (!pChunk) return error_null_pointer;
+    if (!pChunk) return tcs_error_null_pointer;
     free(pChunk->pos_and_color);
     memset(pChunk, 0, sizeof(TCS_Chunk));
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_read_chunk(TCS_pFile pFile, TCS_pChunk pChunk) {
     tcs_u32 count;
-    if (!pFile) return error_null_pointer;
-    if (fread(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return error_file_while_reading;    /* startTime endTime layer_and_count takes up 3 tcs_unit */
+    if (!pFile) return tcs_error_null_pointer;
+    if (fread(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return tcs_error_file_while_reading;    /* startTime endTime layer_and_count takes up 3 tcs_unit */
     count = GETCOUNT(pChunk->layer_and_count) << 1;    /* every pos_and_color takes up 2 tcs_unit */
     pChunk->pos_and_color = (tcs_unit *)malloc(count * sizeof(tcs_unit));
-    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return error_file_while_reading;
-    return error_success;
+    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_reading;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_read_chunks(TCS_pFile pFile, TCS_pChunk pChunk, tcs_u32 count) {
     TCS_Error_Code error;
     tcs_u32 i = 0;
     do error = libtcs_read_chunk(pFile, &pChunk[i ++]);
-    while (i < count && error_success == error);
+    while (i < count && tcs_error_success == error);
     return error;
 }
 
 TCS_Error_Code libtcs_write_chunk(TCS_pFile pFile, const TCS_pChunk pChunk) {
     int count;
-    if (!pFile || !pChunk) return error_null_pointer;
+    if (!pFile || !pChunk) return tcs_error_null_pointer;
     count = GETCOUNT(pChunk->layer_and_count) << 1;    /* every pos_and_color takes up 2 tcs_unit */
-    if (fwrite(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return error_file_while_writing;   /* startTime endTime layer_and_count takes up 3 tcs_unit */
-    if (fwrite(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return error_file_while_writing;
-    return error_success;
+    if (fwrite(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return tcs_error_file_while_writing;   /* startTime endTime layer_and_count takes up 3 tcs_unit */
+    if (fwrite(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_writing;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_write_chunks(TCS_pFile pFile, const TCS_pChunk pChunk, tcs_u32 count, tcs_bool freeChunks) {
@@ -174,10 +174,10 @@ TCS_Error_Code libtcs_write_chunks(TCS_pFile pFile, const TCS_pChunk pChunk, tcs
             error = libtcs_write_chunk(pFile, &pChunk[i]);
             libtcs_free_chunk(&pChunk[i]);
             i ++;
-        } while (i < count && error_success == error);
+        } while (i < count && tcs_error_success == error);
     } else {
         do error = libtcs_write_chunk(pFile, &pChunk[i ++]);
-        while (i < count && error_success == error);
+        while (i < count && tcs_error_success == error);
     }
     return error;
 }
@@ -186,7 +186,7 @@ TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32
     tcs_u32 i, count, compCount, singleCount;
     tcs_unit prevStartTime, prevEndTime, prevLayer;
     tcs_unit *compBuf;
-    if (!pRawChunk) return error_null_pointer;
+    if (!pRawChunk) return tcs_error_null_pointer;
     compBuf = (tcs_unit *)malloc(rawChunks * sizeof(TCS_RawChunk));    /* allocate a block of large enough memory buffer */
     memset(compBuf, 0, rawChunks * sizeof(TCS_RawChunk));
     compBuf[0] = pRawChunk[0].startTime;
@@ -227,7 +227,7 @@ TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32
     *pBuf = compBuf;
     *chunks = rawChunks - compCount;
     *units = count;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pChunk *ppChunk, tcs_u32 *chunks) {
@@ -236,7 +236,7 @@ TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 
     TCS_Error_Code error;
     TCS_pChunk pChunk;
     error = libtcs_compress_raw_chunks(pRawChunk, rawChunks, &buf, &compChunks, &units);
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     pChunk = (TCS_pChunk)malloc(compChunks * sizeof(TCS_Chunk));
     index = 0;
     for (i = 0; i < compChunks; i ++) {
@@ -251,13 +251,13 @@ TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 
     free(buf);
     *ppChunk = pChunk;
     *chunks = compChunks;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf, tcs_u32 *rawChunks, tcs_u32 *units) {
     tcs_u32 i, count, size;    /* count equals *rawChunks */
     tcs_unit *buf;
-    if (!pChunk) return error_null_pointer;
+    if (!pChunk) return tcs_error_null_pointer;
     count = GETCOUNT(pChunk->layer_and_count);
     size = count * sizeof(TCS_RawChunk);
     buf = (tcs_unit *)malloc(size);
@@ -271,7 +271,7 @@ TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf,
     *pBuf = buf;
     *rawChunks = count;
     *units = size >> 2;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_chunk(const TCS_pChunk pChunk, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks) {
@@ -279,15 +279,15 @@ TCS_Error_Code libtcs_convert_chunk(const TCS_pChunk pChunk, TCS_pRawChunk *ppRa
     tcs_unit *buf;
     TCS_Error_Code error;
     error = libtcs_uncompress_chunk(pChunk, &buf, rawChunks, &units);
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     *ppRawChunk = (TCS_pRawChunk)buf;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_unit **pBuf, tcs_u32 *rawChunks, tcs_u32 *units, tcs_bool freeChunks) {
     tcs_u32 i, j, index, count, size;    /* count equals *rawChunks */
     tcs_unit *buf;
-    if (!pChunk) return error_null_pointer;
+    if (!pChunk) return tcs_error_null_pointer;
     count = 0;
     for (i = 0; i < chunks; i ++) {
         count += GETCOUNT(pChunk[i].layer_and_count);
@@ -324,7 +324,7 @@ TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_u
     *pBuf = buf;
     *rawChunks = count;
     *units = size >> 2;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks, tcs_bool freeChunks) {
@@ -332,9 +332,9 @@ TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRaw
     tcs_unit *buf;
     TCS_Error_Code error;
     error = libtcs_uncompress_chunks(pChunk, chunks, &buf, rawChunks, &units, freeChunks);
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     *ppRawChunk = (TCS_pRawChunk)buf;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
@@ -342,10 +342,10 @@ TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
     tcs_u32 count;    /* the same as *chunks */
     tcs_unit buf[1];    /* to hold layer_and_count */
     TCS_Header header;
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     libtcs_read_header(pFile, &header, 0);
-    if (TCS_FLAG_RAW == header.flag) return error_file_type_not_match;
+    if (TCS_FLAG_RAW == header.flag) return tcs_error_file_type_not_match;
     fseek(pFile->fp, 2 * sizeof(tcs_unit), SEEK_CUR);    /* reach the first layer_and_count */
     count = 0;
     while (1) {
@@ -357,7 +357,7 @@ TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
     }
     fsetpos(pFile->fp, &position);    /* reset file position indicator */
     *chunks = count;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_unit *minTime, tcs_unit *maxTime, tcs_unit *chunks) {
@@ -365,7 +365,7 @@ TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_uni
     tcs_u32 mintime, maxtime, count;    /* count is the same as *chunks */
     tcs_unit buf[3];    /* to hold startTime endTime layer_and_count */
     TCS_Header header;
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     mintime = TCS_INIT_MIN_TIME;
     maxtime = TCS_INIT_MAX_TIME;
     count = 0;
@@ -396,7 +396,7 @@ TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_uni
     *minTime = mintime;
     *maxTime = maxtime;
     *chunks = count;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pIndex *ppIndex) {
@@ -406,12 +406,12 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pInde
     tcs_u8 maxLayer;    /* record the max layer of chunks */
     tcs_u32 i, offset, chunks;
     tcs_unit buf[3];    /* a temp buffer to hold startTime endTime layer_and_count */
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     libtcs_read_header(pFile, &header, 0);
     if (TCS_FLAG_COMPRESSED != header.flag) {
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
-        return error_file_type_not_match;
+        return tcs_error_file_type_not_match;
     }
     chunks = header.chunks;    /* get the amount of chunks */
     pIndex = (TCS_pIndex)malloc(chunks * sizeof(TCS_Index));
@@ -453,7 +453,7 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pInde
         pIndex = pNewIndex;
     }
     *ppIndex = pIndex;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, TCS_pIndex *ppIndex) {
@@ -463,12 +463,12 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, 
     tcs_u8 maxLayer;    /* record the max layer of chunks */
     tcs_u32 i, offset, chunks;
     tcs_unit buf[3];    /* a temp buffer to hold startTime endTime layer_and_count */
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     libtcs_read_header(pFile, &header, 0);
     if (TCS_FLAG_COMPRESSED != header.flag) {
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
-        return error_file_type_not_match;
+        return tcs_error_file_type_not_match;
     }
     chunks = header.chunks;    /* get the amount of chunks */
     pIndex = (TCS_pIndex)malloc(chunks * sizeof(TCS_Index));
@@ -510,7 +510,7 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, 
         pIndex = pNewIndex;
     }
     *ppIndex = pIndex;
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex) {
@@ -520,12 +520,12 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pF
     tcs_u8 maxLayer;    /* record the max layer of chunks */
     tcs_u32 i, offset, chunks;
     tcs_unit buf[3];    /* a temp buffer to hold startTime endTime layer_and_count */
-    if (!pFile) return error_null_pointer;
+    if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     libtcs_read_header(pFile, &header, 0);
     if (TCS_FLAG_COMPRESSED != header.flag) {
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
-        return error_file_type_not_match;
+        return tcs_error_file_type_not_match;
     }
     chunks = header.chunks;    /* get the amount of chunks */
     pIndex = (TCS_pIndex)malloc(chunks * sizeof(TCS_Index));
@@ -567,7 +567,13 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pF
         pIndex = pNewIndex;
     }
     *ppIndex = pIndex;
-    return error_success;
+    return tcs_error_success;
+}
+
+TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
+    if (!pIndex) return tcs_error_null_pointer;
+    free(pIndex);
+    return tcs_error_success;
 }
 
 /* high level functions */
@@ -828,15 +834,15 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
     Vector vPreI;
     tcs_u32 i, num, minFrame, maxFrame;
     tcs_unit t, chunks;    /* chunks indicates the amout of chunks in the parsed TCS file */
-    if (!pFile || !filename) return error_null_pointer;
+    if (!pFile || !filename) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
-    if (error_success != error) return error;
-    if (TCS_FLAG_COMPRESSED != header.flag) return error_file_type_not_match;
+    if (tcs_error_success != error) return error;
+    if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file_with_fps(pFile, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
@@ -885,7 +891,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
     fsetpos(pFile->fp, &position);    /* reset file pointer */
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds) {
@@ -900,15 +906,15 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, cons
     Vector vPreI;
     tcs_u32 i, num;
     tcs_unit t, chunks;    /* chunks indicates the amout of chunks in the parsed TCS file */
-    if (!pFile || !filename) return error_null_pointer;
+    if (!pFile || !filename) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
-    if (error_success != error) return error;
-    if (TCS_FLAG_COMPRESSED != header.flag) return error_file_type_not_match;
+    if (tcs_error_success != error) return error;
+    if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file(pFile, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
@@ -955,7 +961,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, cons
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
     fsetpos(pFile->fp, &position);    /* reset file pointer */
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, const char *filename, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator) {
@@ -970,15 +976,15 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
     Vector vPreI;
     tcs_u32 i, num, minFrame, maxFrame;
     tcs_unit t, chunks;    /* chunks indicates the amout of chunks in the parsed TCS file */
-    if (!pFile || !filename) return error_null_pointer;
+    if (!pFile || !filename) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
-    if (error_success != error) return error;
-    if (TCS_FLAG_COMPRESSED != header.flag) return error_file_type_not_match;
+    if (tcs_error_success != error) return error;
+    if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file_with_user_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
@@ -1029,7 +1035,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
     fsetpos(pFile->fp, &position);    /* reset file pointer */
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *filename) {
@@ -1044,15 +1050,15 @@ TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *fil
     Vector vPreI;
     tcs_u32 i, num, minFrame, maxFrame;
     tcs_unit t, chunks;    /* chunks indicates the amout of chunks in the parsed TCS file */
-    if (!pFile || !filename) return error_null_pointer;
+    if (!pFile || !filename) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
-    if (error_success != error) return error;
-    if (TCS_FLAG_COMPRESSED != header.flag) return error_file_type_not_match;
+    if (tcs_error_success != error) return error;
+    if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file_with_fps(pFile, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
@@ -1101,7 +1107,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *fil
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
     fsetpos(pFile->fp, &position);    /* reset file pointer */
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_flag_1_to_3_with_param(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds) {
@@ -1116,15 +1122,15 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_param(const TCS_pFile pFile, cons
     Vector vPreI;
     tcs_u32 i, num;
     tcs_unit t, chunks;    /* chunks indicates the amout of chunks in the parsed TCS file */
-    if (!pFile || !filename) return error_null_pointer;
+    if (!pFile || !filename) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
-    if (error_success != error) return error;
-    if (TCS_FLAG_COMPRESSED != header.flag) return error_file_type_not_match;
+    if (tcs_error_success != error) return error;
+    if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file(pFile, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
@@ -1171,7 +1177,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_param(const TCS_pFile pFile, cons
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
     fsetpos(pFile->fp, &position);    /* reset file pointer */
-    return error_success;
+    return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, const char *filename, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator) {
@@ -1186,15 +1192,15 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, c
     Vector vPreI;
     tcs_u32 i, num, minFrame, maxFrame;
     tcs_unit t, chunks;    /* chunks indicates the amout of chunks in the parsed TCS file */
-    if (!pFile || !filename) return error_null_pointer;
+    if (!pFile || !filename) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
-    if (error_success != error) return error;
-    if (TCS_FLAG_COMPRESSED != header.flag) return error_file_type_not_match;
+    if (tcs_error_success != error) return error;
+    if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file_with_user_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
-    if (error_success != error) return error;
+    if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
@@ -1245,7 +1251,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, c
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
     fsetpos(pFile->fp, &position);    /* reset file pointer */
-    return error_success;
+    return tcs_error_success;
 }
 
 

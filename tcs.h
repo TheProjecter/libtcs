@@ -1,6 +1,5 @@
 /*
  *  tcs.h -- interface of the 'libtcs' library
- *  version 0.6 alpha, Aguest 11th, 2010
  *
  *  Copyright (C) 2009-2010 milkyjing <milkyjing@gmail.com>
  *
@@ -216,14 +215,14 @@ typedef struct _tcs_index {
  * TCS_Error_Code enumeration defines some common errors.
  */
 typedef enum _tcs_error_code {
-    error_success,    /**< indicates a successful process */
-    error_null_pointer,  /**< receive a null pointer which is not desired */
-    error_file_not_found,  /**< can not find the target TCS file */
-    error_file_cant_open,   /**< can not open the target TCS file */
-    error_file_cant_create,  /**< can not create the target TCS file */
-    error_file_while_reading,  /**< some error occurred while reading a TCS file */
-    error_file_while_writing,    /**< some error occurred while writing to a TCS file */
-    error_file_type_not_match    /**< the target TCS file's type does not match the one which is required */
+    tcs_error_success,    /**< indicates a successful process */
+    tcs_error_null_pointer,  /**< receive a null pointer which is not desired */
+    tcs_error_file_not_found,  /**< can not find the target TCS file */
+    tcs_error_file_cant_open,   /**< can not open the target TCS file */
+    tcs_error_file_cant_create,  /**< can not create the target TCS file */
+    tcs_error_file_while_reading,  /**< some error occurred while reading a TCS file */
+    tcs_error_file_while_writing,    /**< some error occurred while writing to a TCS file */
+    tcs_error_file_type_not_match    /**< the target TCS file's type does not match the one which is required */
 } TCS_Error_Code;
 
 /**
@@ -566,6 +565,12 @@ extern TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile 
  * @return TCS_Error_Code
  */
 extern TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex);
+
+/**
+ * Free the memory owned by TCS_pIndex structure.
+ * @param pIndex the address of TCS_Index array that is going to be freed
+ */
+extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
 
 /* high level functions */
 
