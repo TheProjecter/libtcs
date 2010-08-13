@@ -270,6 +270,7 @@ extern TCS_Error_Code libtcs_close_file(TCS_pFile pFile);
  * @see libtcs_read_header()
  * @see libtcs_read_raw_chunks()
  * @see libtcs_read_chunk()
+ * @see libtcs_read_specified_chunk()
  * @see libtcs_read_chunks()
  * @param pFile a pointer to TCS_File structure
  * @param buf memory buffer that is going to hold the data read from the TCS file
@@ -337,14 +338,14 @@ extern TCS_Error_Code libtcs_read_header(TCS_pFile pFile, TCS_pHeader pHeader, t
  * Write TCS_Header strucutre to file.
  * @param pFile a pointer to TCS_File structure
  * @param pHeader a pointer to TCS_Header structure which is going to be written to the TCS file
- * @param keepPosition TCS_TRUE - keep the file position indicator, TCS_FALSE do not keep file the position pointer
+ * @param keepPosition TCS_TRUE - keep the file position indicator, TCS_FALSE do not keep file the position indicator
  * @return TCS_Error_Code
  */
 extern TCS_Error_Code libtcs_write_header(TCS_pFile pFile, const TCS_pHeader pHeader, tcs_bool keepPosition);
 
 /**
  * Read raw chunks from file. 
- * Remark: make sure that the file position pointer is just at the beginning of a chunk.
+ * Remark: make sure that the file position indicator is just at the beginning of a chunk.
  *
  * @param pFile a pointer to TCS_File structure
  * @param pRawChunk the address of TCS_RawChunk array that is going to hold chunk data
@@ -355,7 +356,7 @@ extern TCS_Error_Code libtcs_read_raw_chunks(TCS_pFile pFile, TCS_pRawChunk pRaw
 
 /**
  * Write raw chunks to file. 
- * Remark: make sure that the file position pointer is just at the beginning of a chunk.
+ * Remark: make sure that the file position indicator is just at the beginning of a chunk.
  *
  * @param pFile a pointer to TCS_File structure
  * @param pRawChunk the address of TCS_RawChunk array that is going to be written to file
@@ -382,7 +383,7 @@ extern TCS_Error_Code libtcs_free_chunk(TCS_pChunk pChunk);
 /**
  * Read a compressed/parsed chunk from file. 
  * Remark: you should allocate memory for pChunk, but not for pChunk->pos_and_color. 
- * Make sure that the file position pointer is just at the beginning of a chunk.
+ * Make sure that the file position indicator is just at the beginning of a chunk.
  *
  * @param pFile a pointer to TCS_File structure
  * @param pChunk a pointer to TCS_Chunk structure that is going to hold chunk data
@@ -391,9 +392,22 @@ extern TCS_Error_Code libtcs_free_chunk(TCS_pChunk pChunk);
 extern TCS_Error_Code libtcs_read_chunk(TCS_pFile pFile, TCS_pChunk pChunk);
 
 /**
+ * Read the compressed/parsed chunk specified by the offset from file. 
+ * Remark: you should allocate memory for pChunk, but not for pChunk->pos_and_color. 
+ * Make sure that the file position indicator is just at the beginning of a chunk.
+ * The file position indicator is set by offset from the beginning of the file.
+ *
+ * @param pFile a pointer to TCS_File structure
+ * @param offset the offset of the chunk from the beginning of the file
+ * @param pChunk a pointer to TCS_Chunk structure that is going to hold chunk data
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_read_specified_chunk(TCS_pFile pFile, tcs_s64 offset, TCS_pChunk pChunk);
+
+/**
  * Read compressed/parsed chunks from file. 
  * Remark: you should allocate memory for pChunk, but not for pChunk->pos_and_color. 
- * Make sure that the file position pointer is just at the beginning of a chunk.
+ * Make sure that the file position indicator is just at the beginning of a chunk.
  *
  * @see libtcs_read_chunk()
  * @param pFile a pointer to TCS_File structure
@@ -405,7 +419,7 @@ extern TCS_Error_Code libtcs_read_chunks(TCS_pFile pFile, TCS_pChunk pChunk, tcs
 
 /**
  * Write one compressed/parsed chunk to file. 
- * Remark: make sure that the file position pointer is just at the beginning of a chunk.
+ * Remark: make sure that the file position indicator is just at the beginning of a chunk.
  *
  * @param pFile a pointer to TCS_File structure
  * @param pChunk a pointer to TCS_Chunk structure that is going to be written to file
@@ -415,7 +429,7 @@ extern TCS_Error_Code libtcs_write_chunk(TCS_pFile pFile, const TCS_pChunk pChun
 
 /**
  * Write compressed/parsed chunks to file. 
- * Remark: make sure that the file position pointer is just at the beginning of a chunk.
+ * Remark: make sure that the file position indicator is just at the beginning of a chunk.
  *
  * @see libtcs_write_chunk()
  * @param pFile a pointer to TCS_File structure
@@ -573,6 +587,20 @@ extern TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_p
 extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
 
 /* high level functions */
+
+/**
+ * Create a TCS frame. 
+ * Remark: the function only supports compressed TCS file.
+ *
+ * @param pFile a pointer to TCS_File structure
+ * @param pHeader a pointer to TCS_Header structure
+ * @param pIndex the address of TCS_Index array which holds the parsed index of compressed TCS file, TCS_Index.first means firstFrame and TCS_Index.last means lastFrame
+ * @param pitch bytes in a row
+ * @param n specify which frame is going to create
+ * @param pBuf a pointer to a block of memory which is going to hold the TCS frame
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, int pitch, tcs_u32 n, tcs_byte **pBuf);
 
 /**
  * Parse a compressed TCS file to its (compressed) highest level parsed TCS file using TCS header specified FPS. 

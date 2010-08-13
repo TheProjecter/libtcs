@@ -149,6 +149,25 @@ TCS_Error_Code libtcs_read_chunk(TCS_pFile pFile, TCS_pChunk pChunk) {
     return tcs_error_success;
 }
 
+TCS_Error_Code libtcs_read_specified_chunk(TCS_pFile pFile, tcs_s64 offset, TCS_pChunk pChunk) {
+    tcs_u32 count;
+    if (!pFile) return tcs_error_null_pointer;
+#ifdef __GNUC__
+        fseeko64(pFile->fp, offset, SEEK_SET);
+#else
+#   ifdef _MSC_VER
+        _fseeki64(pFile->fp, offset, SEEK_SET);
+#   else
+        fseek(pFile->fp, offset, SEEK_SET);
+#   endif
+#endif
+    if (fread(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return tcs_error_file_while_reading;    /* startTime endTime layer_and_count takes up 3 tcs_unit */
+    count = GETCOUNT(pChunk->layer_and_count) << 1;    /* every pos_and_color takes up 2 tcs_unit */
+    pChunk->pos_and_color = (tcs_unit *)malloc(count * sizeof(tcs_unit));
+    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_reading;
+    return tcs_error_success;
+}
+
 TCS_Error_Code libtcs_read_chunks(TCS_pFile pFile, TCS_pChunk pChunk, tcs_u32 count) {
     TCS_Error_Code error;
     tcs_u32 i = 0;
@@ -578,6 +597,47 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 
 /* high level functions */
 
+TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, int pitch, tcs_u32 n, tcs_byte **pBuf) {
+    TCS_Chunk chunk;
+    tcs_u32 i, j, size;
+    tcs_u16 x, y, xx, yy;
+    tcs_byte r, g, b, a, r0, g0, b0, a0, A;
+    tcs_byte *src;
+    if (!pFile || !pHeader || !pIndex) return tcs_error_null_pointer;
+    size = GETPOSY(pHeader->resolution) * pitch;
+    src = (tcs_byte *)malloc(size);
+    memset(src, 0, size);
+    for (i = 0; i < pHeader->chunks; i ++) {
+        if (n >= pIndex[i].first && n < pIndex[i].last) {
+            libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[i].offset) << 2, &chunk);
+            for (j = 0; j < GETCOUNT(chunk.layer_and_count); j ++) {
+                x = GETPOSX(chunk.pos_and_color[j << 1]);
+                y = GETPOSY(chunk.pos_and_color[j << 1]);
+                if (x >= GETPOSX(pHeader->resolution) || y >= GETPOSY(pHeader->resolution)) continue;
+                r = GETR(chunk.pos_and_color[(j << 1) + 1]);
+                g = GETG(chunk.pos_and_color[(j << 1) + 1]);
+                b = GETB(chunk.pos_and_color[(j << 1) + 1]);
+                a = GETA(chunk.pos_and_color[(j << 1) + 1]);
+                yy = y * pitch;
+                xx = x << 2;
+                r0 = src[yy + xx];
+                g0 = src[yy + xx + 1];
+                b0 = src[yy + xx + 2];
+                a0 = src[yy + xx + 3];
+                A = 255 - (255 - a) * (255 - a0) / 255;
+                if (0 == A) continue;
+                src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+                src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+                src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+                src[yy + xx + 3] =  A;
+            }
+            libtcs_free_chunk(&chunk);
+        }
+    }
+    *pBuf = src;
+    return tcs_error_success;
+}
+
 /* libtcs_convert_flag series function - convert compressed TCS file to compressed/non-compressed highest level parsed TCS file */
 
 void _vector_clean_buf(void *v) {
@@ -628,19 +688,7 @@ void _convert_chunks_flag_1_to_3_with_param(TCS_pFile pFile, const TCS_pIndex pI
     num = vector_get_size(vi);
     for (i = 0; i < num; i ++) {
         vector_retrieve(vi, i, &index);
-#ifdef __GNUC__
-        fseeko64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#else
-#   ifdef _MSC_VER
-        _fseeki64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#   else
-        fseek(pFile->fp, pIndex[index].offset, SEEK_SET);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-#   endif
-#endif
-        libtcs_read_chunk(pFile, &compressedChunk);
+        libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
         vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
@@ -669,19 +717,7 @@ void _convert_chunks_flag_1_to_3_with_user_fps(TCS_pFile pFile, const TCS_pIndex
     num = vector_get_size(vi);
     for (i = 0; i < num; i ++) {
         vector_retrieve(vi, i, &index);
-#ifdef __GNUC__
-        fseeko64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#else
-#   ifdef _MSC_VER
-        _fseeki64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#   else
-        fseek(pFile->fp, pIndex[index].offset, SEEK_SET);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-#   endif
-#endif
-        libtcs_read_chunk(pFile, &compressedChunk);
+        libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
         vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
@@ -711,19 +747,7 @@ void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pIndex pI
     num = vector_get_size(vi);
     for (i = 0; i < num; i ++) {
         vector_retrieve(vi, i, &index);
-#ifdef __GNUC__
-        fseeko64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#else
-#   ifdef _MSC_VER
-        _fseeki64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#   else
-        fseek(pFile->fp, pIndex[index].offset, SEEK_SET);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-#   endif
-#endif
-        libtcs_read_chunk(pFile, &compressedChunk);
+        libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
         vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
@@ -772,19 +796,7 @@ void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pIndex
     num = vector_get_size(vi);
     for (i = 0; i < num; i ++) {
         vector_retrieve(vi, i, &index);
-#ifdef __GNUC__
-        fseeko64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#else
-#   ifdef _MSC_VER
-        _fseeki64(pFile->fp, ((__int64)pIndex[index].offset) << 2, SEEK_SET);
-#   else
-        fseek(pFile->fp, pIndex[index].offset, SEEK_SET);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-        fseek(pFile->fp, pIndex[index].offset, SEEK_CUR);
-#   endif
-#endif
-        libtcs_read_chunk(pFile, &compressedChunk);
+        libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
         vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
