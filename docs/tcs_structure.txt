@@ -1,0 +1,60 @@
+
+ Header:
+
+ DWORD       DWORD     DWORD   DWORD        DWORD     DWORD     DWORD    DWORD * 9
+ Signature   Version   Flag    Resolution   MinTime   MaxTime   Chunks   Reserved
+
+
+
+ Body:
+
+ Raw TCS file
+
+ DWORD    DWORD   DWORD   DWORD       DWORD                 DWORD    DWORD   DWORD   DWORD       DWORD                 ...
+ DWORD    DWORD   DWORD   WORD WORD   BYTE BYTE BYTE BYTE   DWORD    DWORD   DWORD   WORD WORD   BYTE BYTE BYTE BYTE   ...
+ StartT   EndT    Layer   PosX PosY   R    G    B    A      StartT   EndT    Layer   PosX PosY   R    G    B    A      ...
+
+
+ Minimal raw TCS file
+
+ DWORD    DWORD   DWORD   DWORD       DWORD              
+ DWORD    DWORD   DWORD   WORD WORD   BYTE BYTE BYTE BYTE
+ StartT   EndT    Layer   PosX PosY   R    G    B    A   
+
+
+ Compressed/Parsed TCS file
+
+ DWORD    DWORD   DWORD                  DWORD       DWORD                 DWORD       DWORD                 ...
+ DWORD    DWORD   BYTE  BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE   ...
+ StartT   EndT    Layer nPixels          PosX PosY   R    G    B    A      PosX PosY   R    G    B    A      ...
+
+
+ Minimal compressed/parsed TCS file
+
+ DWORD    DWORD   DWORD                  DWORD       DWORD              
+ DWORD    DWORD   BYTE  BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE
+ StartT   EndT    Layer nPixels          PosX PosY   R    G    B    A   
+
+
+ Highest level parsed TCS file
+
+ DWORD     DWORD   DWORD                  DWORD       DWORD                 DWORD       DWORD                 ...
+ DWORD     DWORD   BYTE  BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE   ...
+ StartT1   EndT1   Layer nPixels          PosX PosY   R    G    B    A      PosX PosY   R    G    B    A      ...
+
+ DWORD     DWORD   DWORD                  DWORD       DWORD                 DWORD       DWORD                 ...
+ DWORD     DWORD   BYTE  BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE   WORD WORD   BYTE BYTE BYTE BYTE   ...
+ StartT2   EndT2   Layer nPixels          PosX PosY   R    G    B    A      PosX PosY   R    G    B    A      ...
+
+ ................................................................................................................
+
+ a. StartT1 < EndT1 <= StartT2 < EndT2 ... ;
+ b. Compressed: any two packed DIPs in the same chunk won't have the same position;
+ c. Non-compressed: some packed DIPs in the same chunk may have the same position (but their order matters);
+ d. BYTE of Layer is of no use (should always equal to 0).
+
+
+
+
+
+
