@@ -600,7 +600,8 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, int pitch, tcs_u32 n, tcs_byte **pBuf) {
     TCS_Chunk chunk;
     tcs_u32 i, j, size;
-    tcs_u16 x, y, xx, yy;
+    tcs_u16 x, y;
+    tcs_u32 xx, yy;
     tcs_byte r, g, b, a, r0, g0, b0, a0, A;
     tcs_byte *src;
     if (!pFile || !pHeader || !pIndex) return tcs_error_null_pointer;
