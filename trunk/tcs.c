@@ -1,6 +1,22 @@
 /*
  *  Copyright (C) 2009-2010 milkyjing <milkyjing@gmail.com>
  *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty.  In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+ *
  *  milkyjing
  *
  */
@@ -495,8 +511,8 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, 
     offset = sizeof(TCS_Header) >> 2;
     for (i = 0; i < chunks; i ++) {
         fread(buf, sizeof(tcs_unit), 3, pFile->fp);   /* startTime endTime layer_and_count takes up 3 tcs_unit */
-        pIndex[i].first = (tcs_u32)((__int64)buf[0] * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* firstFrame, note: +1 is just intend to make it compatible with VSFilter */
-        pIndex[i].last = (tcs_u32)((__int64)buf[1] * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* lastFrame, note: +1 is just intend to make it compatible with VSFilter */
+        pIndex[i].first = (tcs_u32)((tcs_s64)buf[0] * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* firstFrame, note: +1 is just intend to make it compatible with VSFilter */
+        pIndex[i].last = (tcs_u32)((tcs_s64)buf[1] * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* lastFrame, note: +1 is just intend to make it compatible with VSFilter */
         pIndex[i].layer_and_count = buf[2];
         pIndex[i].offset = offset;
         maxLayer = __max(maxLayer, GETLAYER(pIndex[i].layer_and_count));
@@ -552,8 +568,8 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pF
     offset = sizeof(TCS_Header) >> 2;
     for (i = 0; i < chunks; i ++) {
         fread(buf, sizeof(tcs_unit), 3, pFile->fp);   /* startTime endTime layer_and_count takes up 3 tcs_unit */
-        pIndex[i].first = (tcs_u32)((__int64)buf[0] * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* firstFrame, note: +1 is just intend to make it compatible with VSFilter */
-        pIndex[i].last = (tcs_u32)((__int64)buf[1] * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* lastFrame, note: +1 is just intend to make it compatible with VSFilter */
+        pIndex[i].first = (tcs_u32)((tcs_s64)buf[0] * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* firstFrame, note: +1 is just intend to make it compatible with VSFilter */
+        pIndex[i].last = (tcs_u32)((tcs_s64)buf[1] * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* lastFrame, note: +1 is just intend to make it compatible with VSFilter */
         pIndex[i].layer_and_count = buf[2];
         pIndex[i].offset = offset;
         maxLayer = __max(maxLayer, GETLAYER(pIndex[i].layer_and_count));
@@ -597,14 +613,15 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 
 /* high level functions */
 
-TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, int pitch, tcs_u32 n, tcs_byte **pBuf) {
+TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf) {
     TCS_Chunk chunk;
-    tcs_u32 i, j, size;
+    tcs_u32 i, j, pitch, size;
     tcs_u16 x, y;
     tcs_u32 xx, yy;
     tcs_byte r, g, b, a, r0, g0, b0, a0, A;
     tcs_byte *src;
     if (!pFile || !pHeader || !pIndex) return tcs_error_null_pointer;
+    pitch = GETPOSX(pHeader->resolution) << 2;
     size = GETPOSY(pHeader->resolution) * pitch;
     src = (tcs_byte *)malloc(size);
     memset(src, 0, size);
@@ -723,8 +740,8 @@ void _convert_chunks_flag_1_to_3_with_user_fps(TCS_pFile pFile, const TCS_pIndex
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
     offset = 0;
-    parsedChunk.startTime = (tcs_u32)((__int64)(frame - 1) * fpsDenominator * 1000 / fpsNumerator);
-    parsedChunk.endTime = (tcs_u32)((__int64)frame * fpsDenominator * 1000 / fpsNumerator);
+    parsedChunk.startTime = (tcs_u32)((tcs_s64)(frame - 1) * fpsDenominator * 1000 / fpsNumerator);
+    parsedChunk.endTime = (tcs_u32)((tcs_s64)frame * fpsDenominator * 1000 / fpsNumerator);
     parsedChunk.layer_and_count = MAKECL(count, 0);    /* layer of parsedChunk is of no use, and its value is ignored */
     parsedChunk.pos_and_color = (tcs_unit *)malloc(count * (sizeof(tcs_unit) << 1));
     for (i = 0; i < num; i ++) {
@@ -802,8 +819,8 @@ void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pIndex
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
     offset = 0;
-    parsedChunk.startTime = (tcs_u32)((__int64)(frame - 1) * fpsDenominator * 1000 / fpsNumerator);
-    parsedChunk.endTime = (tcs_u32)((__int64)frame * fpsDenominator * 1000 / fpsNumerator);
+    parsedChunk.startTime = (tcs_u32)((tcs_s64)(frame - 1) * fpsDenominator * 1000 / fpsNumerator);
+    parsedChunk.endTime = (tcs_u32)((tcs_s64)frame * fpsDenominator * 1000 / fpsNumerator);
     parsedChunk.pos_and_color = (tcs_unit *)malloc(count * (sizeof(tcs_unit) << 1));
     for (i = 0; i < num; i ++) {
         vector_retrieve(&vCompChunk, i, &compressedChunk);
@@ -860,7 +877,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
     /* get the very first parsed TCS chunk */
     chunks = 0;
     vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    minFrame = (tcs_u32)((__int64)header.minTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    minFrame = (tcs_u32)((tcs_s64)header.minTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (i = 0; i < header.chunks; i ++) {
         if (minFrame >= pIndex[i].first && minFrame < pIndex[i].last) {
             vector_push_back(&vPreI, &i);
@@ -869,7 +886,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
     _convert_chunks_flag_1_to_2_with_user_fps(pFile, pIndex, &vPreI, minFrame, header.fpsNumerator, header.fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    maxFrame = (tcs_u32)((__int64)header.maxTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    maxFrame = (tcs_u32)((tcs_s64)header.maxTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (t = minFrame + 1; t < maxFrame; t ++) {
         vector_clear(&vI);
         for (i = 0; i < header.chunks; i ++) {
@@ -884,7 +901,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
         else sameChunks = (vector_compare(&vI, &vPreI, num) == 0);
         vector_clear(&vPreI);
         vector_copy(&vPreI, &vI);
-        if (sameChunks) parsedChunk.endTime += (tcs_u32)((__int64)header.fpsDenominator * 1000 / header.fpsNumerator);
+        if (sameChunks) parsedChunk.endTime += (tcs_u32)((tcs_s64)header.fpsDenominator * 1000 / header.fpsNumerator);
         else {
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
@@ -1002,7 +1019,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
     /* get the very first parsed TCS chunk */
     chunks = 0;
     vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    minFrame = (tcs_u32)((__int64)header.minTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    minFrame = (tcs_u32)((tcs_s64)header.minTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (i = 0; i < header.chunks; i ++) {
         if (minFrame >= pIndex[i].first && minFrame < pIndex[i].last) {
             vector_push_back(&vPreI, &i);
@@ -1011,7 +1028,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
     _convert_chunks_flag_1_to_2_with_user_fps(pFile, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    maxFrame = (tcs_u32)((__int64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (t = minFrame + 1; t < maxFrame; t ++) {
         vector_clear(&vI);
         for (i = 0; i < header.chunks; i ++) {
@@ -1026,7 +1043,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
         else sameChunks = (vector_compare(&vI, &vPreI, num) == 0);
         vector_clear(&vPreI);
         vector_copy(&vPreI, &vI);
-        if (sameChunks) parsedChunk.endTime += (tcs_u32)((__int64)fpsDenominator * 1000 / fpsNumerator);
+        if (sameChunks) parsedChunk.endTime += (tcs_u32)((tcs_s64)fpsDenominator * 1000 / fpsNumerator);
         else {
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
@@ -1076,7 +1093,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *fil
     /* get the very first parsed TCS chunk */
     chunks = 0;
     vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    minFrame = (tcs_u32)((__int64)header.minTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    minFrame = (tcs_u32)((tcs_s64)header.minTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (i = 0; i < header.chunks; i ++) {
         if (minFrame >= pIndex[i].first && minFrame < pIndex[i].last) {
             vector_push_back(&vPreI, &i);
@@ -1085,7 +1102,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *fil
     _convert_chunks_flag_1_to_3_with_user_fps(pFile, pIndex, &vPreI, minFrame, header.fpsNumerator, header.fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    maxFrame = (tcs_u32)((__int64)header.maxTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    maxFrame = (tcs_u32)((tcs_s64)header.maxTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (t = minFrame + 1; t < maxFrame; t ++) {
         vector_clear(&vI);
         for (i = 0; i < header.chunks; i ++) {
@@ -1100,7 +1117,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *fil
         else sameChunks = (vector_compare(&vI, &vPreI, num) == 0);
         vector_clear(&vPreI);
         vector_copy(&vPreI, &vI);
-        if (sameChunks) parsedChunk.endTime += (tcs_u32)((__int64)header.fpsDenominator * 1000 / header.fpsNumerator);
+        if (sameChunks) parsedChunk.endTime += (tcs_u32)((tcs_s64)header.fpsDenominator * 1000 / header.fpsNumerator);
         else {
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
@@ -1218,7 +1235,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, c
     /* get the very first parsed TCS chunk */
     chunks = 0;
     vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    minFrame = (tcs_u32)((__int64)header.minTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    minFrame = (tcs_u32)((tcs_s64)header.minTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (i = 0; i < header.chunks; i ++) {
         if (minFrame >= pIndex[i].first && minFrame < pIndex[i].last) {
             vector_push_back(&vPreI, &i);
@@ -1227,7 +1244,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, c
     _convert_chunks_flag_1_to_3_with_user_fps(pFile, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
-    maxFrame = (tcs_u32)((__int64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
+    maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (t = minFrame + 1; t < maxFrame; t ++) {
         vector_clear(&vI);
         for (i = 0; i < header.chunks; i ++) {
@@ -1242,7 +1259,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, c
         else sameChunks = (vector_compare(&vI, &vPreI, num) == 0);
         vector_clear(&vPreI);
         vector_copy(&vPreI, &vI);
-        if (sameChunks) parsedChunk.endTime += (tcs_u32)((__int64)fpsDenominator * 1000 / fpsNumerator);
+        if (sameChunks) parsedChunk.endTime += (tcs_u32)((tcs_s64)fpsDenominator * 1000 / fpsNumerator);
         else {
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);

@@ -5,6 +5,7 @@
  *
  *  Note: for more detailed information about TCS file format,
  *  please refer to the TCS Specification.
+ *  http://www.tcsub.com/tcs/spec.htm
  *
  *  This software is provided 'as-is', without any express or implied
  *  warranty.  In no event will the authors be held liable for any damages
@@ -595,12 +596,11 @@ extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
  * @param pFile a pointer to TCS_File structure
  * @param pHeader a pointer to TCS_Header structure
  * @param pIndex the address of TCS_Index array which holds the parsed index of compressed TCS file, TCS_Index.first means firstFrame and TCS_Index.last means lastFrame
- * @param pitch bytes in a row
  * @param n specify which frame is going to create
  * @param pBuf a pointer to a block of memory which is going to hold the TCS frame
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, int pitch, tcs_u32 n, tcs_byte **pBuf);
+extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf);
 
 /**
  * Parse a compressed TCS file to its (compressed) highest level parsed TCS file using TCS header specified FPS. 
