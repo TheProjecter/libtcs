@@ -114,6 +114,7 @@ typedef struct _tcs_file {
     tcs_unit minTime;    /**< use as a temp variable */
     tcs_unit maxTime;    /**< use as a temp variable */
     tcs_unit chunks;     /**< use as a temp variable */
+    tcs_unit temp;       /**< use as a temp variable */
 } TCS_File, *TCS_pFile;
 
 /**
@@ -223,7 +224,8 @@ typedef enum _tcs_error_code {
     tcs_error_file_cant_create,  /**< can not create the target TCS file */
     tcs_error_file_while_reading,  /**< some error occurred while reading a TCS file */
     tcs_error_file_while_writing,    /**< some error occurred while writing to a TCS file */
-    tcs_error_file_type_not_match    /**< the target TCS file's type does not match the one which is required */
+    tcs_error_file_type_not_match,    /**< the target TCS file's type does not match the one which is required */
+    tcs_error_file_type_not_support    /**< the target TCS file's type has not been supported yet */
 } TCS_Error_Code;
 
 /**
@@ -590,9 +592,7 @@ extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
 /* high level functions */
 
 /**
- * Create a TCS frame. 
- * Remark: the function only supports compressed TCS file.
- *
+ * Create a TCS frame.
  * @param pFile a pointer to TCS_File structure
  * @param pHeader a pointer to TCS_Header structure
  * @param pIndex the address of TCS_Index array which holds the parsed index of compressed TCS file, TCS_Index.first means firstFrame and TCS_Index.last means lastFrame
