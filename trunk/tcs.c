@@ -615,43 +615,82 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 
 TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf) {
     TCS_Chunk chunk;
-    tcs_u32 i, j, pitch, size;
     tcs_u16 x, y;
-    tcs_u32 xx, yy;
+    tcs_u32 i, j, t, pitch, size, xx, yy;
     tcs_byte r, g, b, a, r0, g0, b0, a0, A;
     tcs_byte *src;
-    if (!pFile || !pHeader || !pIndex) return tcs_error_null_pointer;
+    if (!pFile || !pHeader) return tcs_error_null_pointer;
     pitch = GETPOSX(pHeader->resolution) << 2;
     size = GETPOSY(pHeader->resolution) * pitch;
     src = (tcs_byte *)malloc(size);
     memset(src, 0, size);
-    for (i = 0; i < pHeader->chunks; i ++) {
-        if (n >= pIndex[i].first && n < pIndex[i].last) {
-            libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[i].offset) << 2, &chunk);
-            for (j = 0; j < GETCOUNT(chunk.layer_and_count); j ++) {
-                x = GETPOSX(chunk.pos_and_color[j << 1]);
-                y = GETPOSY(chunk.pos_and_color[j << 1]);
-                if (x >= GETPOSX(pHeader->resolution) || y >= GETPOSY(pHeader->resolution)) continue;
-                r = GETR(chunk.pos_and_color[(j << 1) + 1]);
-                g = GETG(chunk.pos_and_color[(j << 1) + 1]);
-                b = GETB(chunk.pos_and_color[(j << 1) + 1]);
-                a = GETA(chunk.pos_and_color[(j << 1) + 1]);
-                yy = y * pitch;
-                xx = x << 2;
-                r0 = src[yy + xx];
-                g0 = src[yy + xx + 1];
-                b0 = src[yy + xx + 2];
-                a0 = src[yy + xx + 3];
-                A = 255 - (255 - a) * (255 - a0) / 255;
-                if (0 == A) continue;
-                src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
-                src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
-                src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
-                src[yy + xx + 3] =  A;
+    if (TCS_FLAG_COMPRESSED == pHeader->flag) {
+        if (!pIndex) return tcs_error_null_pointer;
+        for (i = 0; i < pHeader->chunks; i ++) {
+            if (n >= pIndex[i].first && n < pIndex[i].last) {
+                libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[i].offset) << 2, &chunk);
+                for (j = 0; j < GETCOUNT(chunk.layer_and_count); j ++) {
+                    x = GETPOSX(chunk.pos_and_color[j << 1]);
+                    y = GETPOSY(chunk.pos_and_color[j << 1]);
+                    if (x >= GETPOSX(pHeader->resolution) || y >= GETPOSY(pHeader->resolution)) continue;
+                    r = GETR(chunk.pos_and_color[(j << 1) + 1]);
+                    g = GETG(chunk.pos_and_color[(j << 1) + 1]);
+                    b = GETB(chunk.pos_and_color[(j << 1) + 1]);
+                    a = GETA(chunk.pos_and_color[(j << 1) + 1]);
+                    yy = y * pitch;
+                    xx = x << 2;
+                    r0 = src[yy + xx];
+                    g0 = src[yy + xx + 1];
+                    b0 = src[yy + xx + 2];
+                    a0 = src[yy + xx + 3];
+                    A = 255 - (255 - a) * (255 - a0) / 255;
+                    if (0 == A) continue;
+                    src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+                    src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+                    src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+                    src[yy + xx + 3] =  A;
+                }
+                libtcs_free_chunk(&chunk);
             }
-            libtcs_free_chunk(&chunk);
         }
-    }
+    } else if (TCS_FLAG_PARSED_HIGHEST_LV == pHeader->flag || TCS_FLAG_PARSED_HIGHEST_LV_NONCOMPRESSED == pHeader->flag) {
+        if (n <= pFile->temp) libtcs_set_file_position_indicator(pFile, tcs_fpi_header);
+        pFile->temp = n;
+        t = (tcs_u32)((tcs_s64)n * pHeader->fpsDenominator * 1000 / pHeader->fpsNumerator);
+        do {
+            fread(&chunk, sizeof(tcs_unit), 3, pFile->fp);
+            fseek(pFile->fp, GETCOUNT(chunk.layer_and_count) * (sizeof(tcs_unit) << 1), SEEK_CUR);
+            if (t < chunk.startTime) {
+                fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
+                *pBuf = src;
+                return tcs_error_success;
+            }
+        } while (!(t >= chunk.startTime && t < chunk.endTime));
+        fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
+        libtcs_read_chunk(pFile, &chunk);
+        for (j = 0; j < GETCOUNT(chunk.layer_and_count); j ++) {
+            x = GETPOSX(chunk.pos_and_color[j << 1]);
+            y = GETPOSY(chunk.pos_and_color[j << 1]);
+            if (x >= GETPOSX(pHeader->resolution) || y >= GETPOSY(pHeader->resolution)) continue;
+            r = GETR(chunk.pos_and_color[(j << 1) + 1]);
+            g = GETG(chunk.pos_and_color[(j << 1) + 1]);
+            b = GETB(chunk.pos_and_color[(j << 1) + 1]);
+            a = GETA(chunk.pos_and_color[(j << 1) + 1]);
+            yy = y * pitch;
+            xx = x << 2;
+            r0 = src[yy + xx];
+            g0 = src[yy + xx + 1];
+            b0 = src[yy + xx + 2];
+            a0 = src[yy + xx + 3];
+            A = 255 - (255 - a) * (255 - a0) / 255;
+            if (0 == A) continue;
+            src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 3] =  A;
+        }
+        libtcs_free_chunk(&chunk);
+    } else return tcs_error_file_type_not_support;
     *pBuf = src;
     return tcs_error_success;
 }
@@ -916,7 +955,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
     libtcs_write_chunk(&outfile, &parsedChunk);
     libtcs_free_chunk(&parsedChunk);
     chunks ++;
-    header.flag = TCS_FLAG_PARSED_HIGHEST_LV_NONCOMPRESSED;
+    header.flag = TCS_FLAG_PARSED_HIGHEST_LV;
     header.chunks = chunks;
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
@@ -986,7 +1025,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, cons
     libtcs_write_chunk(&outfile, &parsedChunk);
     libtcs_free_chunk(&parsedChunk);
     chunks ++;
-    header.flag = TCS_FLAG_PARSED_HIGHEST_LV_NONCOMPRESSED;
+    header.flag = TCS_FLAG_PARSED_HIGHEST_LV;
     header.chunks = chunks;
     libtcs_write_header(&outfile, &header, 0);
     libtcs_close_file(&outfile);
@@ -1058,7 +1097,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
     libtcs_write_chunk(&outfile, &parsedChunk);
     libtcs_free_chunk(&parsedChunk);
     chunks ++;
-    header.flag = TCS_FLAG_PARSED_HIGHEST_LV_NONCOMPRESSED;
+    header.flag = TCS_FLAG_PARSED_HIGHEST_LV;
     header.chunks = chunks;
     header.fpsNumerator = fpsNumerator;
     header.fpsDenominator = fpsDenominator;
