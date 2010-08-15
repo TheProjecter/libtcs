@@ -394,6 +394,71 @@ TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width,
     return tcs_error_success;
 }
 
+TCS_Error_Code libtcs_convert_chunk_to_rgba(const TCS_pChunk pChunk, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA) {
+    tcs_u16 x, y;
+    tcs_u32 i, pitch, size, xx, yy;
+    tcs_byte r, g, b, a, r0, g0, b0, a0, A;
+    tcs_byte *rgba;
+    if (!pChunk) return tcs_error_null_pointer;
+    pitch = width << 2;
+    size = height * pitch;
+    rgba = (tcs_byte *)malloc(size);
+    memset(rgba, 0, size);
+    for (i = 0; i < GETCOUNT(pChunk->layer_and_count); i ++) {
+        x = GETPOSX(pChunk->pos_and_color[i << 1]);
+        y = GETPOSY(pChunk->pos_and_color[i << 1]);
+        if (x >= width || y >= height) continue;
+        r = GETR(pChunk->pos_and_color[(i << 1) + 1]);
+        g = GETG(pChunk->pos_and_color[(i << 1) + 1]);
+        b = GETB(pChunk->pos_and_color[(i << 1) + 1]);
+        a = GETA(pChunk->pos_and_color[(i << 1) + 1]);
+        yy = y * pitch;
+        xx = x << 2;
+        r0 = rgba[yy + xx];
+        g0 = rgba[yy + xx + 1];
+        b0 = rgba[yy + xx + 2];
+        a0 = rgba[yy + xx + 3];
+        A = 255 - (255 - a) * (255 - a0) / 255;
+        if (0 == A) continue;
+        rgba[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+        rgba[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+        rgba[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+        rgba[yy + xx + 3] =  A;
+    }
+    *pRGBA = rgba;
+    return tcs_error_success;
+}
+
+TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs_u16 width, tcs_u16 height, tcs_byte *rgba) {
+    tcs_u16 x, y;
+    tcs_u32 i, pitch, xx, yy;
+    tcs_byte r, g, b, a, r0, g0, b0, a0, A;
+    if (!pChunk || !rgba) return tcs_error_null_pointer;
+    pitch = width << 2;
+    for (i = 0; i < GETCOUNT(pChunk->layer_and_count); i ++) {
+        x = GETPOSX(pChunk->pos_and_color[i << 1]);
+        y = GETPOSY(pChunk->pos_and_color[i << 1]);
+        if (x >= width || y >= height) continue;
+        r = GETR(pChunk->pos_and_color[(i << 1) + 1]);
+        g = GETG(pChunk->pos_and_color[(i << 1) + 1]);
+        b = GETB(pChunk->pos_and_color[(i << 1) + 1]);
+        a = GETA(pChunk->pos_and_color[(i << 1) + 1]);
+        yy = y * pitch;
+        xx = x << 2;
+        r0 = rgba[yy + xx];
+        g0 = rgba[yy + xx + 1];
+        b0 = rgba[yy + xx + 2];
+        a0 = rgba[yy + xx + 3];
+        A = 255 - (255 - a) * (255 - a0) / 255;
+        if (0 == A) continue;
+        rgba[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+        rgba[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+        rgba[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+        rgba[yy + xx + 3] =  A;
+    }
+    return tcs_error_success;
+}
+
 TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
     fpos_t position;
     tcs_u32 count;    /* the same as *chunks */
@@ -637,41 +702,22 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 
 TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf) {
     TCS_Chunk chunk;
-    tcs_u16 x, y;
-    tcs_u32 i, j, t, pitch, size, xx, yy;
-    tcs_byte r, g, b, a, r0, g0, b0, a0, A;
-    tcs_byte *src;
+    tcs_u16 width, height;
+    tcs_u32 i, t, pitch, size;
+    tcs_byte *rgba;
     if (!pFile || !pHeader) return tcs_error_null_pointer;
-    pitch = GETPOSX(pHeader->resolution) << 2;
-    size = GETPOSY(pHeader->resolution) * pitch;
-    src = (tcs_byte *)malloc(size);
-    memset(src, 0, size);
+    width = GETPOSX(pHeader->resolution);
+    height = GETPOSY(pHeader->resolution);
+    pitch = width << 2;
+    size = height * pitch;
+    rgba = (tcs_byte *)malloc(size);
+    memset(rgba, 0, size);
     if (TCS_FLAG_COMPRESSED == pHeader->flag) {
         if (!pIndex) return tcs_error_null_pointer;
         for (i = 0; i < pHeader->chunks; i ++) {
             if (n >= pIndex[i].first && n < pIndex[i].last) {
                 libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[i].offset) << 2, &chunk);
-                for (j = 0; j < GETCOUNT(chunk.layer_and_count); j ++) {
-                    x = GETPOSX(chunk.pos_and_color[j << 1]);
-                    y = GETPOSY(chunk.pos_and_color[j << 1]);
-                    if (x >= GETPOSX(pHeader->resolution) || y >= GETPOSY(pHeader->resolution)) continue;
-                    r = GETR(chunk.pos_and_color[(j << 1) + 1]);
-                    g = GETG(chunk.pos_and_color[(j << 1) + 1]);
-                    b = GETB(chunk.pos_and_color[(j << 1) + 1]);
-                    a = GETA(chunk.pos_and_color[(j << 1) + 1]);
-                    yy = y * pitch;
-                    xx = x << 2;
-                    r0 = src[yy + xx];
-                    g0 = src[yy + xx + 1];
-                    b0 = src[yy + xx + 2];
-                    a0 = src[yy + xx + 3];
-                    A = 255 - (255 - a) * (255 - a0) / 255;
-                    if (0 == A) continue;
-                    src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
-                    src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
-                    src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
-                    src[yy + xx + 3] =  A;
-                }
+                libtcs_convert_chunks_to_rgba(&chunk, width, height, rgba);
                 libtcs_free_chunk(&chunk);
             }
         }
@@ -684,36 +730,16 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
             fseek(pFile->fp, GETCOUNT(chunk.layer_and_count) * (sizeof(tcs_unit) << 1), SEEK_CUR);
             if (t < chunk.startTime) {
                 fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
-                *pBuf = src;
+                *pBuf = rgba;
                 return tcs_error_success;
             }
         } while (!(t >= chunk.startTime && t < chunk.endTime));
         fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
         libtcs_read_chunk(pFile, &chunk);
-        for (j = 0; j < GETCOUNT(chunk.layer_and_count); j ++) {
-            x = GETPOSX(chunk.pos_and_color[j << 1]);
-            y = GETPOSY(chunk.pos_and_color[j << 1]);
-            if (x >= GETPOSX(pHeader->resolution) || y >= GETPOSY(pHeader->resolution)) continue;
-            r = GETR(chunk.pos_and_color[(j << 1) + 1]);
-            g = GETG(chunk.pos_and_color[(j << 1) + 1]);
-            b = GETB(chunk.pos_and_color[(j << 1) + 1]);
-            a = GETA(chunk.pos_and_color[(j << 1) + 1]);
-            yy = y * pitch;
-            xx = x << 2;
-            r0 = src[yy + xx];
-            g0 = src[yy + xx + 1];
-            b0 = src[yy + xx + 2];
-            a0 = src[yy + xx + 3];
-            A = 255 - (255 - a) * (255 - a0) / 255;
-            if (0 == A) continue;
-            src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
-            src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
-            src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
-            src[yy + xx + 3] =  A;
-        }
+        libtcs_convert_chunks_to_rgba(&chunk, width, height, rgba);
         libtcs_free_chunk(&chunk);
     } else return tcs_error_file_type_not_support;
-    *pBuf = src;
+    *pBuf = rgba;
     return tcs_error_success;
 }
 
