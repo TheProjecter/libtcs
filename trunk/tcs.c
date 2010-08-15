@@ -389,6 +389,7 @@ TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width,
         }
     }
     size = index * (sizeof(tcs_unit) << 1);
+    pChunk->layer_and_count = MAKECL(index, GETLAYER(pChunk->layer_and_count));
     pChunk->pos_and_color = (tcs_unit *)realloc(pChunk->pos_and_color, size);
     return tcs_error_success;
 }
@@ -814,11 +815,12 @@ void _convert_chunks_flag_1_to_3_with_user_fps(TCS_pFile pFile, const TCS_pIndex
     *pParsedChunk = parsedChunk;
 }
 
+/*
 void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
-    tcs_u32 i, j, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
-    tcs_unit *buf;    /* memory buffer to hold compressed parsed chunk */
+    tcs_u32 i, j, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color 
+    tcs_unit *buf;    /* memory buffer to hold compressed parsed chunk 
     Vector vCompChunk;
     vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, _vector_clean_chunks);
     count = 0;
@@ -826,7 +828,7 @@ void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pIndex pI
     for (i = 0; i < num; i ++) {
         vector_retrieve(vi, i, &index);
         libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
-        vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
+        vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() 
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
     offset = 0;
@@ -846,8 +848,8 @@ void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pIndex pI
     index = 0;
     for (i = 0; i < num; i ++) {
         if (TCS_INVALID_POS == parsedChunk.pos_and_color[i << 1]) continue;
-        buf[index << 1] = parsedChunk.pos_and_color[i << 1];    /* pos */
-        buf[(index << 1) + 1] = parsedChunk.pos_and_color[(i << 1) + 1];    /* color */
+        buf[index << 1] = parsedChunk.pos_and_color[i << 1];    /* pos 
+        buf[(index << 1) + 1] = parsedChunk.pos_and_color[(i << 1) + 1];    /* color 
         for (j = i + 1; j < num; j ++) {
             if (parsedChunk.pos_and_color[i << 1] == parsedChunk.pos_and_color[j << 1]) {
                 buf[(index << 1) + 1] = _blend_color(buf[(index << 1) + 1], parsedChunk.pos_and_color[(j << 1) + 1]);
@@ -858,7 +860,7 @@ void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pIndex pI
         index ++;
     }
     free(parsedChunk.pos_and_color);
-    parsedChunk.layer_and_count = MAKECL(count, 0);    /* layer of parsedChunk is of no use, and its value is ignored */
+    parsedChunk.layer_and_count = MAKECL(count, 0);    /* layer of parsedChunk is of no use, and its value is ignored 
     parsedChunk.pos_and_color = (tcs_unit *)realloc(buf, count * (sizeof(tcs_unit) << 1));
     *pParsedChunk = parsedChunk;
 }
@@ -866,8 +868,8 @@ void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pIndex pI
 void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
-    tcs_u32 i, j, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
-    tcs_unit *buf;    /* memory buffer to hold compressed parsed chunk */
+    tcs_u32 i, j, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color 
+    tcs_unit *buf;    /* memory buffer to hold compressed parsed chunk 
     Vector vCompChunk;
     vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, _vector_clean_chunks);
     count = 0;
@@ -875,7 +877,7 @@ void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pIndex
     for (i = 0; i < num; i ++) {
         vector_retrieve(vi, i, &index);
         libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
-        vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
+        vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() 
         count += GETCOUNT(compressedChunk.layer_and_count);
     }
     offset = 0;
@@ -895,8 +897,8 @@ void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pIndex
     index = 0;
     for (i = 0; i < num; i ++) {
         if (TCS_INVALID_POS == parsedChunk.pos_and_color[i << 1]) continue;
-        buf[index << 1] = parsedChunk.pos_and_color[i << 1];    /* pos */
-        buf[(index << 1) + 1] = parsedChunk.pos_and_color[(i << 1) + 1];    /* color */
+        buf[index << 1] = parsedChunk.pos_and_color[i << 1];    /* pos 
+        buf[(index << 1) + 1] = parsedChunk.pos_and_color[(i << 1) + 1];    /* color 
         for (j = i + 1; j < num; j ++) {
             if (parsedChunk.pos_and_color[i << 1] == parsedChunk.pos_and_color[j << 1]) {
                 buf[(index << 1) + 1] = _blend_color(buf[(index << 1) + 1], parsedChunk.pos_and_color[(j << 1) + 1]);
@@ -907,8 +909,117 @@ void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pIndex
         index ++;
     }
     free(parsedChunk.pos_and_color);
-    parsedChunk.layer_and_count = MAKECL(count, 0);    /* layer of parsedChunk is of no use, and its value is ignored */
+    parsedChunk.layer_and_count = MAKECL(count, 0);    /* layer of parsedChunk is of no use, and its value is ignored 
     parsedChunk.pos_and_color = (tcs_unit *)realloc(buf, count * (sizeof(tcs_unit) << 1));
+    *pParsedChunk = parsedChunk;
+}
+*/
+
+void _convert_chunks_flag_1_to_2_with_param(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
+    TCS_Chunk compressedChunk;
+    TCS_Chunk parsedChunk;
+    tcs_u16 x, y, width, height;
+    tcs_u32 i, j, index, num, pitch, size, xx, yy;
+    tcs_byte r, g, b, a, r0, g0, b0, a0, A;
+    tcs_byte *src;
+    Vector vCompChunk;
+    vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, _vector_clean_chunks);
+    num = vector_get_size(vi);
+    for (i = 0; i < num; i ++) {
+        vector_retrieve(vi, i, &index);
+        libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
+        vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
+    }
+    parsedChunk.startTime = t;
+    parsedChunk.endTime = t + milliseconds;
+    parsedChunk.layer_and_count = MAKECL(0, 0);
+    width = GETPOSX(pHeader->resolution);
+    height = GETPOSY(pHeader->resolution);
+    pitch = width << 2;
+    size = height * pitch;
+    src = (tcs_byte *)malloc(size);
+    memset(src, 0, size);
+    for (i = 0; i < num; i ++) {
+        vector_retrieve(&vCompChunk, i, &compressedChunk);
+        for (j = 0; j < GETCOUNT(compressedChunk.layer_and_count); j ++) {
+            x = GETPOSX(compressedChunk.pos_and_color[j << 1]);
+            y = GETPOSY(compressedChunk.pos_and_color[j << 1]);
+            if (x >= width || y >= height) continue;
+            r = GETR(compressedChunk.pos_and_color[(j << 1) + 1]);
+            g = GETG(compressedChunk.pos_and_color[(j << 1) + 1]);
+            b = GETB(compressedChunk.pos_and_color[(j << 1) + 1]);
+            a = GETA(compressedChunk.pos_and_color[(j << 1) + 1]);
+            yy = y * pitch;
+            xx = x << 2;
+            r0 = src[yy + xx];
+            g0 = src[yy + xx + 1];
+            b0 = src[yy + xx + 2];
+            a0 = src[yy + xx + 3];
+            A = 255 - (255 - a) * (255 - a0) / 255;
+            if (0 == A) continue;
+            src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 3] =  A;
+        }
+    }
+    vector_clear(&vCompChunk);
+    libtcs_convert_rgba_to_chunk(src, width, height, &parsedChunk);
+    free(src);
+    *pParsedChunk = parsedChunk;
+}
+
+void _convert_chunks_flag_1_to_2_with_user_fps(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
+    TCS_Chunk compressedChunk;
+    TCS_Chunk parsedChunk;
+    tcs_u16 x, y, width, height;
+    tcs_u32 i, j, index, num, pitch, size, xx, yy;
+    tcs_byte r, g, b, a, r0, g0, b0, a0, A;
+    tcs_byte *src;
+    Vector vCompChunk;
+    vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, _vector_clean_chunks);
+    num = vector_get_size(vi);
+    for (i = 0; i < num; i ++) {
+        vector_retrieve(vi, i, &index);
+        libtcs_read_specified_chunk(pFile, ((tcs_s64)pIndex[index].offset) << 2, &compressedChunk);
+        vector_push_back(&vCompChunk, &compressedChunk);    /* note that compressedChunk.pos_and_color is low copy, it'll be freed by _vector_clean_chunks() */
+    }
+    parsedChunk.startTime = (tcs_u32)((tcs_s64)(frame - 1) * fpsDenominator * 1000 / fpsNumerator);
+    parsedChunk.endTime = (tcs_u32)((tcs_s64)frame * fpsDenominator * 1000 / fpsNumerator);
+    parsedChunk.layer_and_count = MAKECL(0, 0);
+    width = GETPOSX(pHeader->resolution);
+    height = GETPOSY(pHeader->resolution);
+    pitch = width << 2;
+    size = height * pitch;
+    src = (tcs_byte *)malloc(size);
+    memset(src, 0, size);
+    for (i = 0; i < num; i ++) {
+        vector_retrieve(&vCompChunk, i, &compressedChunk);
+        for (j = 0; j < GETCOUNT(compressedChunk.layer_and_count); j ++) {
+            x = GETPOSX(compressedChunk.pos_and_color[j << 1]);
+            y = GETPOSY(compressedChunk.pos_and_color[j << 1]);
+            if (x >= width || y >= height) continue;
+            r = GETR(compressedChunk.pos_and_color[(j << 1) + 1]);
+            g = GETG(compressedChunk.pos_and_color[(j << 1) + 1]);
+            b = GETB(compressedChunk.pos_and_color[(j << 1) + 1]);
+            a = GETA(compressedChunk.pos_and_color[(j << 1) + 1]);
+            yy = y * pitch;
+            xx = x << 2;
+            r0 = src[yy + xx];
+            g0 = src[yy + xx + 1];
+            b0 = src[yy + xx + 2];
+            a0 = src[yy + xx + 3];
+            A = 255 - (255 - a) * (255 - a0) / 255;
+            if (0 == A) continue;
+            src[yy + xx]     = (r * a + r0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 1] = (g * a + g0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 2] = (b * a + b0 * a0 * (255 - a) / 255) / A;
+            src[yy + xx + 3] =  A;
+        }
+    }
+    vector_clear(&vCompChunk);
+    libtcs_convert_rgba_to_chunk(src, width, height, &parsedChunk);
+    free(src);
     *pParsedChunk = parsedChunk;
 }
 
@@ -943,7 +1054,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_2_with_user_fps(pFile, pIndex, &vPreI, minFrame, header.fpsNumerator, header.fpsDenominator, &parsedChunk);
+    _convert_chunks_flag_1_to_2_with_user_fps(pFile, &header, pIndex, &vPreI, minFrame, header.fpsNumerator, header.fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
     maxFrame = (tcs_u32)((tcs_s64)header.maxTime * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
@@ -966,7 +1077,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *fil
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_2_with_user_fps(pFile, pIndex, &vPreI, t, header.fpsNumerator, header.fpsDenominator, &parsedChunk);
+            _convert_chunks_flag_1_to_2_with_user_fps(pFile, &header, pIndex, &vPreI, t, header.fpsNumerator, header.fpsDenominator, &parsedChunk);
         }
     }
     free(pIndex);
@@ -1014,7 +1125,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, cons
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_2_with_param(pFile, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
+    _convert_chunks_flag_1_to_2_with_param(pFile, &header, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
     for (t = header.minTime + 1; t < header.maxTime; t += milliseconds) {
@@ -1036,7 +1147,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, cons
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_2_with_param(pFile, pIndex, &vPreI, t, milliseconds, &parsedChunk);
+            _convert_chunks_flag_1_to_2_with_param(pFile, &header, pIndex, &vPreI, t, milliseconds, &parsedChunk);
         }
     }
     free(pIndex);
@@ -1085,7 +1196,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_2_with_user_fps(pFile, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
+    _convert_chunks_flag_1_to_2_with_user_fps(pFile, &header, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
     maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
@@ -1108,7 +1219,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, c
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_2_with_user_fps(pFile, pIndex, &vPreI, t, fpsNumerator, fpsDenominator, &parsedChunk);
+            _convert_chunks_flag_1_to_2_with_user_fps(pFile, &header, pIndex, &vPreI, t, fpsNumerator, fpsDenominator, &parsedChunk);
         }
     }
     free(pIndex);
