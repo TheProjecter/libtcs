@@ -379,11 +379,11 @@ TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width,
     pChunk->pos_and_color = (tcs_unit *)malloc(width * height * (sizeof(tcs_unit) << 1));    /* every pos_and_color occupies 2 tcs_unit */
     index = 0;
     for (h = 0; h < height; h ++) {
-        offset = h * (width << 2);
         for (w = 0; w < width; w ++) {
-            if (0 != rgba[offset + w + 3]) {
-                pChunk->pos_and_color[(index << 1)] = MAKEPOS(h, w);
-                pChunk->pos_and_color[(index << 1) + 1] = *((const tcs_unit *) &rgba[offset + w]);
+            offset = h * (width << 2) + (w << 2);
+            if (0 != rgba[offset + 3]) {
+                pChunk->pos_and_color[(index << 1)] = MAKEPOS(w, h);
+                pChunk->pos_and_color[(index << 1) + 1] = *((const tcs_unit *)&rgba[offset]);
                 index ++;
             }
         }
