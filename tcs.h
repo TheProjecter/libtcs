@@ -518,7 +518,9 @@ extern TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks
 extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks, tcs_bool freeChunks);
 
 /**
- * Convert a RGBA array to compressed chunk.
+ * Convert a RGBA array to compressed chunk. 
+ * Remark: the function will not change the value of startTime, endTime and layer byte in the output chunk.
+ *
  * @param rgba the address of a RGBA array
  * @param width width of RGBA array
  * @param height height of RGBA array
