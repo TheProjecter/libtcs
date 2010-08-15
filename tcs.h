@@ -518,6 +518,16 @@ extern TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks
 extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks, tcs_bool freeChunks);
 
 /**
+ * Convert a RGBA array to compressed chunk.
+ * @param rgba the address of a RGBA array
+ * @param width width of RGBA array
+ * @param height height of RGBA array
+ * @param pChunk a pointer to TCS_Chunk that is going to hold the converted data
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width, tcs_u16 height, TCS_pChunk pChunk);
+
+/**
  * Count the chunks of TCS FX data in compressed/parsed TCS file. 
  * Remark: this function will NOT change the file position indicator. 
  * Chunks in raw TCS file can be calculate by macros COUNT_RAW_CHUNKS.

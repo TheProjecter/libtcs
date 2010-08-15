@@ -372,6 +372,27 @@ TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRaw
     return tcs_error_success;
 }
 
+TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width, tcs_u16 height, TCS_pChunk pChunk) {
+    tcs_u16 h, w;
+    tcs_u32 index, offset, size;
+    if (!rgba || !pChunk) return tcs_error_null_pointer;
+    pChunk->pos_and_color = (tcs_unit *)malloc(width * height * (sizeof(tcs_unit) << 1));    /* every pos_and_color occupies 2 tcs_unit */
+    index = 0;
+    for (h = 0; h < height; h ++) {
+        offset = h * (width << 2);
+        for (w = 0; w < width; w ++) {
+            if (0 != rgba[offset + w + 3]) {
+                pChunk->pos_and_color[(index << 1)] = MAKEPOS(w, h);
+                pChunk->pos_and_color[(index << 1) + 1] = *((const tcs_unit *) &rgba[offset + w]);
+                index ++;
+            }
+        }
+    }
+    size = index * (sizeof(tcs_unit) << 1);
+    pChunk->pos_and_color = (tcs_unit *)realloc(pChunk->pos_and_color, size);
+    return tcs_error_success;
+}
+
 TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
     fpos_t position;
     tcs_u32 count;    /* the same as *chunks */
