@@ -94,6 +94,10 @@ extern void vector_clear(Vector *v) {
     /* v->elementSize should stay unchanged */
 }
 
+extern const void *vector_get_buf(const Vector *v) {
+    return (const void *)v->pBuf;
+}
+
 extern void vector_copy(Vector *dst, const Vector *src) {
     dst->elementSize = src->elementSize;
     dst->capacity = src->capacity;
