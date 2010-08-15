@@ -521,6 +521,8 @@ extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, T
  * Convert a RGBA array to compressed chunk. 
  * Remark: the function will not change the value of startTime, endTime and layer byte in the output chunk.
  *
+ * @see libtcs_convert_chunk_to_rgba()
+ * @see libtcs_convert_chunks_to_rgba()
  * @param rgba the address of a RGBA array
  * @param width width of RGBA array
  * @param height height of RGBA array
@@ -528,6 +530,36 @@ extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, T
  * @return TCS_Error_Code
  */
 extern TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width, tcs_u16 height, TCS_pChunk pChunk);
+
+/**
+ * Convert a chunk to RGBA array. 
+ * Remark: the function will just ignore the value of startTime, endTime and layer byte.
+ *
+ * @see libtcs_convert_rgba_to_chunk()
+ * @see libtcs_convert_chunks_to_rgba()
+ * @param pChunk a pointer to TCS_Chunk that is going to be converted
+ * @param width width of target RGBA array
+ * @param height height of target RGBA array
+ * @param pRGBA pointer to the address of a RGBA array
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_convert_chunk_to_rgba(const TCS_pChunk pChunk, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA);
+
+/**
+ * Convert chunks to RGBA array. 
+ * Remark: the function will just ignore the value of startTime, endTime and layer byte. 
+ * You should allocate memory for the target RGBA array. Note that this function only converts one chunk a time, 
+ * if you want to convert more than one chunks, just use the function more than once.
+ *
+ * @see libtcs_convert_rgba_to_chunk()
+ * @see libtcs_convert_chunk_to_rgba()
+ * @param pChunk a pointer to TCS_Chunk that is going to be converted
+ * @param width width of target RGBA array
+ * @param height height of target RGBA array
+ * @param rgba pointer to the RGBA array that is going to hold the converted data
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs_u16 width, tcs_u16 height, tcs_byte *rgba);
 
 /**
  * Count the chunks of TCS FX data in compressed/parsed TCS file. 
