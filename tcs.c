@@ -579,64 +579,7 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pInde
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, TCS_pIndex *ppIndex) {
-    fpos_t position;
-    TCS_pIndex pIndex;
-    TCS_Header header;
-    tcs_u8 maxLayer;    /* record the max layer of chunks */
-    tcs_u32 i, offset, chunks;
-    tcs_unit buf[3];    /* a temp buffer to hold startTime endTime layer_and_count */
-    if (!pFile) return tcs_error_null_pointer;
-    fgetpos(pFile->fp, &position);    /* remember file position indicator */
-    libtcs_read_header(pFile, &header, 0);
-    if (TCS_FLAG_COMPRESSED != header.flag) {
-        fsetpos(pFile->fp, &position);    /* reset file position indicator */
-        return tcs_error_file_type_not_match;
-    }
-    chunks = header.chunks;    /* get the amount of chunks */
-    pIndex = (TCS_pIndex)malloc(chunks * sizeof(TCS_Index));
-    maxLayer = (tcs_u8)0;
-    offset = sizeof(TCS_Header) >> 2;
-    for (i = 0; i < chunks; i ++) {
-        fread(buf, sizeof(tcs_unit), 3, pFile->fp);   /* startTime endTime layer_and_count takes up 3 tcs_unit */
-        pIndex[i].first = (tcs_u32)((tcs_s64)buf[0] * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* firstFrame, note: +1 is just intend to make it compatible with VSFilter */
-        pIndex[i].last = (tcs_u32)((tcs_s64)buf[1] * header.fpsNumerator / (header.fpsDenominator * 1000)) + 1;    /* lastFrame, note: +1 is just intend to make it compatible with VSFilter */
-        pIndex[i].layer_and_count = buf[2];
-        pIndex[i].offset = offset;
-        maxLayer = __max(maxLayer, GETLAYER(pIndex[i].layer_and_count));
-        offset += 3 + (GETCOUNT(pIndex[i].layer_and_count) << 1);
-        fseek(pFile->fp, (GETCOUNT(pIndex[i].layer_and_count) << 1) * sizeof(tcs_unit), SEEK_CUR);
-    }
-    fsetpos(pFile->fp, &position);    /* reset file position indicator */
-    if (0 != maxLayer) {    /* order chunks by layers */
-        tcs_u32 size;
-        tcs_u32 *layerChunks, *layerIndex;
-        TCS_pIndex pNewIndex;
-        size = (maxLayer + 1) * sizeof(tcs_u32);
-        layerChunks = (tcs_u32 *)malloc(size);   /* count the number of chunks in each layer */
-        memset(layerChunks, 0, size);
-        for (i = 0; i < chunks; i ++) {
-            layerChunks[GETLAYER(pIndex[i].layer_and_count)] ++;
-        }
-        layerIndex = (tcs_u32 *)malloc((maxLayer + 1) * sizeof(tcs_u32));    /* index of each layer */
-        layerIndex[0] = 0;
-        for (i = 1; i <= maxLayer; i ++) {
-            layerIndex[i] = layerIndex[i - 1] + layerChunks[i - 1];
-        }
-        free(layerChunks);
-        pNewIndex = (TCS_pIndex)malloc(chunks * sizeof(TCS_Index));
-        for (i = 0; i < chunks; i ++) {
-            pNewIndex[layerIndex[GETLAYER(pIndex[i].layer_and_count)] ++] = pIndex[i];    /* note: each chunk has a TCS_Index structure */
-        }
-        free(layerIndex);
-        free(pIndex);
-        pIndex = pNewIndex;
-    }
-    *ppIndex = pIndex;
-    return tcs_error_success;
-}
-
-TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex) {
+TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex) {
     fpos_t position;
     TCS_pIndex pIndex;
     TCS_Header header;
@@ -983,7 +926,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const 
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
     if (tcs_error_success != error) return error;
     if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
-    error = libtcs_parse_compressed_tcs_file_with_user_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
+    error = libtcs_parse_compressed_tcs_file_with_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
     if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
     if (tcs_error_success != error) return error;
@@ -1127,7 +1070,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const 
     error = libtcs_read_header(pFile, &header, 0);    /* get header of the compressed TCS file */
     if (tcs_error_success != error) return error;
     if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
-    error = libtcs_parse_compressed_tcs_file_with_user_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
+    error = libtcs_parse_compressed_tcs_file_with_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
     if (tcs_error_success != error) return error;
     error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
     if (tcs_error_success != error) return error;
