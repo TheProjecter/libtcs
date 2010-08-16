@@ -58,6 +58,7 @@
 #define TCS_FLAG_RAW 0
 #define TCS_FLAG_COMPRESSED 1
 #define TCS_FLAG_PARSED_HIGHEST_LV 2
+#define TCS_FLAG_PARSED TCS_FLAG_PARSED_HIGHEST_LV
 #define TCS_FLAG_PARSED_HIGHEST_LV_NONCOMPRESSED 3
 
 #define TCS_ERROR -1
@@ -647,67 +648,33 @@ extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
 extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf);
 
 /**
- * Parse a compressed TCS file to its (compressed) highest level parsed TCS file using TCS header specified FPS. 
- * Remark: this function will NOT change the file position indicator. 
- * Flag = 1 - compressed TCS file, Flag = 2 - (compressed) highest level parsed TCS file. 
- * Note: libtcs_convert_flag_1_to_2 series functions are much slower than libtcs_convert_flag_1_to_3 series functions.
- *
- * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_convert_flag_1_to_2_with_param()
- * @see libtcs_convert_flag_1_to_2_with_user_fps()
- * @param pFile a pointer to TCS_File structure
- * @param filename file name of the output file
- * @return TCS_Error_Code
- */
-extern TCS_Error_Code libtcs_convert_flag_1_to_2(const TCS_pFile pFile, const char *filename);
-
-/**
  * Parse a compressed TCS file to its (compressed) highest level parsed TCS file with user specified param - milliseconds. 
  * Remark: this function will NOT change the file position indicator. 
  * Flag = 1 - compressed TCS file, Flag = 2 - (compressed) highest level parsed TCS file. 
- * Note: libtcs_convert_flag_1_to_2 series functions are much slower than libtcs_convert_flag_1_to_3 series functions.
  *
  * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_convert_flag_1_to_2()
- * @see libtcs_convert_flag_1_to_2_with_user_fps()
+ * @see libtcs_convert_flag_1_to_2_with_fps()
  * @param pFile a pointer to TCS_File structure
  * @param filename file name of the output file
  * @param milliseconds timeline scaner incremental unit
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_flag_1_to_2_with_param(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds);
+extern TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds);
 
 /**
  * Parse a compressed TCS file to its (compressed) highest level parsed TCS file with user specified fps - fpsNumerator and fpsDenominator. 
  * Remark: this function will NOT change the file position indicator. 
  * Flag = 1 - compressed TCS file, Flag = 2 - (compressed) highest level parsed TCS file. 
- * Note: libtcs_convert_flag_1_to_2 series functions are much slower than libtcs_convert_flag_1_to_3 series functions.
  *
  * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_convert_flag_1_to_2()
- * @see libtcs_convert_flag_1_to_2_with_param()
+ * @see libtcs_convert_flag_1_to_2_with_ms()
  * @param pFile a pointer to TCS_File structure
  * @param filename file name of the output file
  * @param fpsNumerator FramePerSecond = fpsNumerator / (double)fpsDenominator
  * @param fpsDenominator FramePerSecond = fpsNumerator / (double)fpsDenominator
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_flag_1_to_2_with_user_fps(const TCS_pFile pFile, const char *filename, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator);
-
-/**
- * Parse a compressed TCS file to its non-compressed highest level parsed TCS file using TCS header specified FPS. 
- * Remark: this function will NOT change the file position indicator. 
- * Flag = 1 - compressed TCS file, Flag = 3 - non-compressed highest level parsed TCS file.
- *
- * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_convert_flag_1_to_3_with_param()
- * @see libtcs_convert_flag_1_to_3_with_user_fps()
- * @param pFile a pointer to TCS_File structure
- * @param filename file name of the output file
- * @param milliseconds timeline scaner incremental unit
- * @return TCS_Error_Code
- */
-extern TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const char *filename);
+extern TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const char *filename, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator);
 
 /**
  * Parse a compressed TCS file to its non-compressed highest level parsed TCS file with user specified param - milliseconds. 
@@ -715,14 +682,13 @@ extern TCS_Error_Code libtcs_convert_flag_1_to_3(const TCS_pFile pFile, const ch
  * Flag = 1 - compressed TCS file, Flag = 3 - non-compressed highest level parsed TCS file.
  *
  * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_convert_flag_1_to_3()
- * @see libtcs_convert_flag_1_to_3_with_user_fps()
+ * @see libtcs_convert_flag_1_to_3_with_fps()
  * @param pFile a pointer to TCS_File structure
  * @param filename file name of the output file
  * @param milliseconds timeline scaner incremental unit
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_flag_1_to_3_with_param(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds);
+extern TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds);
 
 /**
  * Parse a compressed TCS file to its non-compressed highest level parsed TCS file with user specified fps - fpsNumerator and fpsDenominator. 
@@ -730,15 +696,14 @@ extern TCS_Error_Code libtcs_convert_flag_1_to_3_with_param(const TCS_pFile pFil
  * Flag = 1 - compressed TCS file, Flag = 3 - non-compressed highest level parsed TCS file.
  *
  * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_convert_flag_1_to_3()
- * @see libtcs_convert_flag_1_to_3_with_param()
+ * @see libtcs_convert_flag_1_to_3_with_ms()
  * @param pFile a pointer to TCS_File structure
  * @param filename file name of the output file
  * @param fpsNumerator FramePerSecond = fpsNumerator / (double)fpsDenominator
  * @param fpsDenominator FramePerSecond = fpsNumerator / (double)fpsDenominator
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_flag_1_to_3_with_user_fps(const TCS_pFile pFile, const char *filename, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator);
+extern TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const char *filename, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator);
 
 #ifdef __cplusplus
 }
