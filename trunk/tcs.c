@@ -680,6 +680,7 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
         } while (!(t >= chunk.startTime && t < chunk.endTime));
         fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
         libtcs_read_chunk(pFile, &chunk);
+        fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
         libtcs_convert_chunks_to_rgba(&chunk, width, height, rgba);
         libtcs_free_chunk(&chunk);
     } else return tcs_error_file_type_not_support;
