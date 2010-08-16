@@ -593,7 +593,6 @@ extern TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, 
  * In this function, TCS_Index.first means startTime and TCS_Index.last means endTime.
  *
  * @see libtcs_parse_compressed_tcs_file_with_fps()
- * @see libtcs_parse_compressed_tcs_file_with_user_fps()
  * @param pFile a pointer to TCS_File structure
  * @param ppIndex a pointer to TCS_pIndex that is going to hold the parsed TCS Index
  * @return TCS_Error_Code
@@ -601,32 +600,18 @@ extern TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, 
 extern TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pIndex *ppIndex);
 
 /**
- * Parse a compressed TCS file using TCS header specified FPS. 
+ * Parse a compressed TCS file using specified FPS. 
  * Remark: this function will NOT change the file position indicator. 
  * In this function, TCS_Index.first means firstFrame and TCS_Index.last means lastFrame.
  *
  * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_parse_compressed_tcs_file_with_user_fps()
- * @param pFile a pointer to TCS_File structure
- * @param ppIndex a pointer to TCS_pIndex that is going to hold the parsed TCS Index
- * @return TCS_Error_Code
- */
-extern TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, TCS_pIndex *ppIndex);
-
-/**
- * Parse a compressed TCS file using user specified FPS. 
- * Remark: this function will NOT change the file position indicator. 
- * In this function, TCS_Index.first means firstFrame and TCS_Index.last means lastFrame.
- *
- * @see libtcs_parse_compressed_tcs_file()
- * @see libtcs_parse_compressed_tcs_file_with_fps()
  * @param pFile a pointer to TCS_File structure
  * @param fpsNumerator FramePerSecond = fpsNumerator / (double)fpsDenominator
  * @param fpsDenominator FramePerSecond = fpsNumerator / (double)fpsDenominator
  * @param ppIndex a pointer to TCS_pIndex that is going to hold the parsed TCS Index
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_parse_compressed_tcs_file_with_user_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex);
+extern TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex);
 
 /**
  * Free the memory owned by TCS_pIndex structure.
@@ -662,7 +647,7 @@ extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader
 extern TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds);
 
 /**
- * Parse a compressed TCS file to its (compressed) highest level parsed TCS file with user specified fps - fpsNumerator and fpsDenominator. 
+ * Parse a compressed TCS file to its (compressed) highest level parsed TCS file with specified fps - fpsNumerator and fpsDenominator. 
  * Remark: this function will NOT change the file position indicator. 
  * Flag = 1 - compressed TCS file, Flag = 2 - (compressed) highest level parsed TCS file. 
  *
@@ -691,7 +676,7 @@ extern TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile,
 extern TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const char *filename, tcs_u8 milliseconds);
 
 /**
- * Parse a compressed TCS file to its non-compressed highest level parsed TCS file with user specified fps - fpsNumerator and fpsDenominator. 
+ * Parse a compressed TCS file to its non-compressed highest level parsed TCS file with specified fps - fpsNumerator and fpsDenominator. 
  * Remark: this function will NOT change the file position indicator. 
  * Flag = 1 - compressed TCS file, Flag = 3 - non-compressed highest level parsed TCS file.
  *
