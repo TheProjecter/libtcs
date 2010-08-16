@@ -1,4 +1,4 @@
-libtcs version 0.6 alpha, Aguest 11th, 2010
+libtcs version 0.7, Aguest 17th, 2010
 
 Copyright (C) 2009-2010 milkyjing <milkyjing@gmail.com>
 
