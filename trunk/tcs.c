@@ -670,7 +670,10 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
         pFile->temp = n;
         t = (tcs_u32)((tcs_s64)n * pHeader->fpsDenominator * 1000 / pHeader->fpsNumerator);
         do {
-            fread(&chunk, sizeof(tcs_unit), 3, pFile->fp);
+            if (fread(&chunk, sizeof(tcs_unit), 3, pFile->fp) != 3) {
+                *pBuf = rgba;
+                return tcs_error_success;
+            }
             fseek(pFile->fp, GETCOUNT(chunk.layer_and_count) * (sizeof(tcs_unit) << 1), SEEK_CUR);
             if (t < chunk.startTime) {
                 fseek(pFile->fp, -(long)(3 + (GETCOUNT(chunk.layer_and_count) << 1)) * sizeof(tcs_unit), SEEK_CUR);
