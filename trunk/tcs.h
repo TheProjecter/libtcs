@@ -622,15 +622,21 @@ extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
 /* high level functions */
 
 /**
- * Create a TCS frame.
+ * Create a TCS frame. 
+ * Remark: the function supports for compressed TCS file and highest level parsed TCS file (both compressed and non-compressed). 
+ * If the source TCS file is a compressed TCS file param fpsNumerator and fpsDenominator will be ignored. 
+ * If the source TCS file is a parsed TCS file param pIndex will be ignored.
+ *
  * @param pFile a pointer to TCS_File structure
  * @param pHeader a pointer to TCS_Header structure
  * @param pIndex the address of TCS_Index array which holds the parsed index of compressed TCS file, TCS_Index.first means firstFrame and TCS_Index.last means lastFrame
  * @param n specify which frame is going to create
+ * @param fpsNumerator numerator of the target video frame rate
+ * @param fpsDenominator denominator of the target video frame rate
  * @param pBuf a pointer to a block of memory which is going to hold the TCS frame
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf);
+extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, tcs_byte **pBuf);
 
 /**
  * Parse a compressed TCS file to its (compressed) highest level parsed TCS file with user specified param - milliseconds. 

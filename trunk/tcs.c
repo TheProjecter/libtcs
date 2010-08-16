@@ -644,7 +644,7 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 
 /* high level functions */
 
-TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_byte **pBuf) {
+TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, tcs_byte **pBuf) {
     TCS_Chunk chunk;
     tcs_u16 width, height;
     tcs_u32 i, t, pitch, size;
@@ -668,7 +668,7 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
     } else if (TCS_FLAG_PARSED_HIGHEST_LV == pHeader->flag || TCS_FLAG_PARSED_HIGHEST_LV_NONCOMPRESSED == pHeader->flag) {
         if (n <= pFile->temp) libtcs_set_file_position_indicator(pFile, tcs_fpi_header);
         pFile->temp = n;
-        t = (tcs_u32)((tcs_s64)n * pHeader->fpsDenominator * 1000 / pHeader->fpsNumerator);
+        t = (tcs_u32)((tcs_s64)n * fpsDenominator * 1000 / fpsNumerator);
         do {
             if (fread(&chunk, sizeof(tcs_unit), 3, pFile->fp) != 3) {
                 *pBuf = rgba;
