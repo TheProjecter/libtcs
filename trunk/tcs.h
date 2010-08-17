@@ -54,6 +54,10 @@
 #define TCS_INVALID_POS TCS_RESERVED_POS
 #define TCS_MAX_POSX 0xfffe
 #define TCS_MAX_POSY 0xfffe
+#define TCS_INIT_MIN_POSX TCS_MAX_POSX
+#define TCS_INIT_MIN_POSY TCS_MAX_POSY
+#define TCS_INIT_MAX_POSX 0
+#define TCS_INIT_MAX_POSY 0
 
 #define TCS_FLAG_RAW 0
 #define TCS_FLAG_COMPRESSED 1
@@ -572,6 +576,17 @@ extern TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs
  * @param targetHeight height of target RGBA array
  */
 extern TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight);
+
+/**
+ * Get minPosX minPosY maxPosX maxPosY of a chunk.
+ * @param pChunk a pointer to TCS_Chunk structure
+ * @param minPosX holds the minimal x-axis value of the target chunk
+ * @param minPosY holds the minimal y-axis value of the target chunk
+ * @param maxPosX holds the maximal x-axis value of the target chunk
+ * @param maxPosY holds the maximal y-axis value of the target chunk
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *minPosX, tcs_u16 *minPosY, tcs_u16 *maxPosX, tcs_u16 *maxPosY);
 
 /**
  * Count the chunks of TCS FX data in compressed/parsed TCS file. 

@@ -487,6 +487,24 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
     return tcs_error_success;
 }
 
+TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *minPosX, tcs_u16 *minPosY, tcs_u16 *maxPosX, tcs_u16 *maxPosY) {
+    tcs_u32 i;
+    tcs_u16 minX, minY, maxX, maxY;
+    if (!pChunk) return tcs_error_null_pointer;
+    minX = TCS_INIT_MIN_POSX;
+    minY = TCS_INIT_MIN_POSY;
+    maxX = TCS_INIT_MAX_POSX;
+    maxY = TCS_INIT_MAX_POSY;
+    for (i = 0; i < GETCOUNT(pChunk->layer_and_count); i ++) {
+        if (TCS_INVALID_POS == pChunk->pos_and_color[i << 1]) continue;
+        minX = __min(minX, GETPOSX(pChunk->pos_and_color[i << 1]));
+        minY = __min(minY, GETPOSY(pChunk->pos_and_color[i << 1]));
+        maxX = __max(maxX, GETPOSX(pChunk->pos_and_color[i << 1]));
+        maxY = __max(maxY, GETPOSY(pChunk->pos_and_color[i << 1]));
+    }
+    return tcs_error_success;
+}
+
 TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
     fpos_t position;
     tcs_u32 count;    /* the same as *chunks */
