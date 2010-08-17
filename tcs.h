@@ -563,6 +563,17 @@ extern TCS_Error_Code libtcs_convert_chunk_to_rgba(const TCS_pChunk pChunk, tcs_
 extern TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs_u16 width, tcs_u16 height, tcs_byte *rgba);
 
 /**
+ * Resample RGBA array.
+ * @param src the address of source RGBA array
+ * @param width width of the source RGBA array
+ * @param height height of the source RGBA array
+ * @param pRGBA pointer to the address of a RGBA array
+ * @param targetWidth width of target RGBA array
+ * @param targetHeight height of target RGBA array
+ */
+extern TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight);
+
+/**
  * Count the chunks of TCS FX data in compressed/parsed TCS file. 
  * Remark: this function will NOT change the file position indicator. 
  * Chunks in raw TCS file can be calculate by macros COUNT_RAW_CHUNKS.
@@ -633,10 +644,12 @@ extern TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex);
  * @param n specify which frame is going to create
  * @param fpsNumerator numerator of the target video frame rate
  * @param fpsDenominator denominator of the target video frame rate
+ * @param targetWidth width of the target video
+ * @param targetHeight height of the target video
  * @param pBuf a pointer to a block of memory which is going to hold the TCS frame
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, tcs_byte **pBuf);
+extern TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, tcs_u16 targetWidth, tcs_u16 targetHeight, tcs_byte **pBuf);
 
 /**
  * Parse a compressed TCS file to its (compressed) highest level parsed TCS file with user specified param - milliseconds. 
