@@ -460,6 +460,33 @@ TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs_u16 wi
     return tcs_error_success;
 }
 
+TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight) {
+    tcs_u16 h, w;
+    tcs_u32 pitch, targetPitch, targetSize, Sx, Sy, Dx, Dy;
+    tcs_byte *dst;
+    if (!src) return tcs_error_null_pointer;
+    pitch = width << 2;
+    targetPitch = targetWidth << 2;
+    targetSize = targetHeight * targetPitch;
+    dst = (tcs_byte *)malloc(targetSize);
+    for (h = 0; h < targetHeight; h ++) {
+        Dy = h * targetPitch;    /* Destination buffer postion-y */
+        Sy = (h * height / targetHeight) * pitch;  /* Source buffer postion-y */
+        for (w = 0; w < targetWidth; w ++) {
+            Dx = w << 2;       /* Destination buffer postion-x */
+            Sx = (w * width / targetWidth) << 2;    /* Source buffer postion-x */
+            if (0 != src[Sy + Sx + 3]) {             /* we predict that there are a lot of transparent pixels */
+                dst[Dy + Dx]     = src[Sy + Sx];
+                dst[Dy + Dx + 1] = src[Sy + Sx + 1];
+                dst[Dy + Dx + 2] = src[Sy + Sx + 2];
+                dst[Dy + Dx + 3] = src[Sy + Sx + 3];
+            }
+        }
+    }
+    *pRGBA = dst;
+    return tcs_error_success;
+}
+
 TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
     fpos_t position;
     tcs_u32 count;    /* the same as *chunks */
@@ -644,7 +671,7 @@ TCS_Error_Code libtcs_destroy_index(TCS_pIndex pIndex) {
 
 /* high level functions */
 
-TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, tcs_byte **pBuf) {
+TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, tcs_u32 n, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, tcs_u16 targetWidth, tcs_u16 targetHeight, tcs_byte **pBuf) {
     TCS_Chunk chunk;
     tcs_u16 width, height;
     tcs_u32 i, t, pitch, size;
@@ -687,6 +714,11 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
         libtcs_convert_chunks_to_rgba(&chunk, width, height, rgba);
         libtcs_free_chunk(&chunk);
     } else return tcs_error_file_type_not_support;
+    if (!(width == targetWidth && height == targetHeight)) {
+        tcs_byte *src = rgba;
+        libtcs_resample_rgba(src, width, height, &rgba, targetWidth, targetHeight);
+        free(src);
+    }
     *pBuf = rgba;
     return tcs_error_success;
 }
