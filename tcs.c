@@ -29,12 +29,12 @@
 #endif    /* _MSC_VER */
 
 
-TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_Open_Type type) {
+TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_File_Open_Type type) {
     if (!pFile) return tcs_error_null_pointer;
-    if (tcs_open_existing == type) {
+    if (tcs_file_open_existing == type) {
         pFile->fp = fopen(filename, "rb");    /* file should open in binary mode */
         if (!pFile->fp) return tcs_error_file_cant_open;
-    } else if (tcs_create_new == type) {
+    } else if (tcs_file_create_new == type) {
         pFile->fp = fopen(filename, "wb");    /* file should open in binary mode */
         if (!pFile->fp) return tcs_error_file_cant_create;
     }
@@ -912,7 +912,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const c
     if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file(pFile, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
     if (tcs_error_success != error) return error;
-    error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
+    error = libtcs_open_file(&outfile, filename, tcs_file_create_new);   /* create the output TCS file to store parsed chunks */
     if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
@@ -982,7 +982,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const 
     if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file_with_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
     if (tcs_error_success != error) return error;
-    error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
+    error = libtcs_open_file(&outfile, filename, tcs_file_create_new);   /* create the output TCS file to store parsed chunks */
     if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
@@ -1056,7 +1056,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const c
     if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file(pFile, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
     if (tcs_error_success != error) return error;
-    error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
+    error = libtcs_open_file(&outfile, filename, tcs_file_create_new);   /* create the output TCS file to store parsed chunks */
     if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
@@ -1126,7 +1126,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const 
     if (TCS_FLAG_COMPRESSED != header.flag) return tcs_error_file_type_not_match;
     error = libtcs_parse_compressed_tcs_file_with_fps(pFile, fpsNumerator, fpsDenominator, &pIndex);    /* get parsed TCS Index of the compressed TCS file */
     if (tcs_error_success != error) return error;
-    error = libtcs_open_file(&outfile, filename, tcs_create_new);   /* create the output TCS file to store parsed chunks */
+    error = libtcs_open_file(&outfile, filename, tcs_file_create_new);   /* create the output TCS file to store parsed chunks */
     if (tcs_error_success != error) return error;
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */

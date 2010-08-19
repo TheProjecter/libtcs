@@ -54,10 +54,12 @@
 #define TCS_INVALID_POS TCS_RESERVED_POS
 #define TCS_MAX_POSX 0xfffe
 #define TCS_MAX_POSY 0xfffe
+#define TCS_MIN_POSX 0
+#define TCS_MIN_POSY 0
 #define TCS_INIT_MIN_POSX TCS_MAX_POSX
 #define TCS_INIT_MIN_POSY TCS_MAX_POSY
-#define TCS_INIT_MAX_POSX 0
-#define TCS_INIT_MAX_POSY 0
+#define TCS_INIT_MAX_POSX TCS_MIN_POSX
+#define TCS_INIT_MAX_POSY TCS_MIN_POSY
 
 #define TCS_FLAG_RAW 0
 #define TCS_FLAG_COMPRESSED 1
@@ -234,13 +236,13 @@ typedef enum _tcs_error_code {
 } TCS_Error_Code;
 
 /**
- * TCS_Open_Type enumeration defines two kinds of file opening type. 
+ * TCS_File_Open_Type enumeration defines two kinds of file opening type. 
  * This is only used in libtcs_open_file function.
  */
-typedef enum _tcs_open_type {
-    tcs_open_existing,    /**< open an existing TCS file */
-    tcs_create_new    /**< create a new TCS file */
-} TCS_Open_Type;
+typedef enum _tcs_file_open_type {
+    tcs_file_open_existing,    /**< open an existing TCS file */
+    tcs_file_create_new    /**< create a new TCS file */
+} TCS_File_Open_Type;
 
 /**
  * TCS_File_Position_Indicator enumeration defines three positions of file position indicator.
@@ -261,10 +263,10 @@ extern "C" {
  * Open an existing file or create a new file.
  * @param pFile a pointer to TCS_File structure
  * @param filename specify the file name which is to be opened
- * @param type specify opening type
+ * @param type specify file opening type
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_Open_Type type);
+extern TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_File_Open_Type type);
 
 /**
  * Close the tcs file handler associated with TCS_File structure.
