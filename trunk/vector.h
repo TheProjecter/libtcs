@@ -37,6 +37,7 @@ extern "C" {
 
 typedef void (*CleanFunc)(void *);
 
+/* Note that if element of vector is a pointer, then the copy including vector_assign(), vector_retrieve(), vector_push_back() and vector_copy() are all low copy. */
 typedef struct _vector {
     unsigned char *buffer;
     unsigned long elementSize;
