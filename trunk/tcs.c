@@ -744,13 +744,13 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
 /* libtcs_convert_flag series function - convert compressed TCS file to compressed/non-compressed highest level parsed TCS file */
 
 void _vector_clean_buf(void *v) {
-    free(((Vector *)v)->pBuf);
+    free(((Vector *)v)->buffer);
 }
 
 void _vector_clean_chunks(void *v) {
     unsigned long i, count;
     TCS_pChunk pChunk;
-    pChunk = (TCS_pChunk)((Vector *)v)->pBuf;
+    pChunk = (TCS_pChunk)((Vector *)v)->buffer;
     count = ((Vector *)v)->count;
     for (i = 0; i < count; i ++) {
         free(pChunk[i].pos_and_color);

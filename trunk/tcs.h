@@ -224,7 +224,7 @@ typedef struct _tcs_index {
  * TCS_Error_Code enumeration defines some common errors.
  */
 typedef enum _tcs_error_code {
-    tcs_error_success,    /**< indicates a successful process */
+    tcs_error_success = 0,    /**< indicates a successful process */
     tcs_error_null_pointer,  /**< receive a null pointer which is not desired */
     tcs_error_file_not_found,  /**< can not find the target TCS file */
     tcs_error_file_cant_open,   /**< can not open the target TCS file */
