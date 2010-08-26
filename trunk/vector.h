@@ -104,7 +104,7 @@ extern void vector_copy(Vector *dst, const Vector *src) {
     dst->capacity = src->capacity;
     dst->count = src->count;
     dst->clean_buf = src->clean_buf;
-    dst->buffer = (unsigned char *)malloc(src->count * src->elementSize);
+    dst->buffer = (unsigned char *)malloc(dst->capacity * dst->elementSize);
     memcpy(dst->buffer, src->buffer, src->count * src->elementSize);
 }
 
