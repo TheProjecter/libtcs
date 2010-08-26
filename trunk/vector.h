@@ -31,11 +31,8 @@
 #include <memory.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif    /* __cplusplus */
-
-typedef void (*CleanFunc)(void *);
+typedef void (*CopyFunc)(void *, void *, const void *);    /* vector, dst, src */
+typedef void (*CleanFunc)(void *);    /* vector */
 
 /* Note that if element of vector is a pointer, then the copy including vector_assign(), vector_retrieve(), vector_push_back() and vector_copy() are all low copy. */
 typedef struct _vector {
@@ -43,14 +40,24 @@ typedef struct _vector {
     unsigned long elementSize;
     unsigned long capacity;
     unsigned long count;
+    CopyFunc copy_element;
     CleanFunc clean_buf;
 } Vector;
 
-extern void vector_init(Vector *v, unsigned long elementSize, unsigned long elements, CleanFunc clean_buf) {
+#ifdef __cplusplus
+extern "C" {
+#endif    /* __cplusplus */
+
+extern void vector_default_copy_element(void *v, void *src, const void *dst) {
+    memcpy(src, dst, ((Vector *)v)->elementSize);
+}
+
+extern void vector_init(Vector *v, unsigned long elementSize, unsigned long elements, CopyFunc copy_element, CleanFunc clean_buf) {
     Vector vector;
     vector.elementSize = elementSize;
     vector.capacity = elements;
     vector.count = elements;
+    vector.copy_element = copy_element;
     vector.clean_buf = clean_buf;
     vector.buffer = (unsigned char *)malloc(vector.capacity * vector.elementSize);
     *v = vector;
@@ -62,13 +69,13 @@ extern unsigned long vector_get_size(const Vector *v) {
 
 extern int vector_assign(Vector *v, unsigned long i, const void *element) {
     if (i >= v->count) return -1;
-    memcpy(v->buffer + i * v->elementSize, element, v->elementSize);
+    v->copy_element(v, v->buffer + i * v->elementSize, element);
     return 0;
 }
 
 extern int vector_retrieve(const Vector *v, unsigned long i, void *element) {
     if (i >= v->count) return -1;
-    memcpy(element, v->buffer + i * v->elementSize, v->elementSize);
+    v->copy_element((Vector *)v, element, v->buffer + i * v->elementSize);
     return 0;
 }
 
@@ -77,7 +84,7 @@ extern void vector_push_back(Vector *v, const void *element) {
         v->capacity += v->capacity / 2 + 1;
         v->buffer = (unsigned char *)realloc(v->buffer, v->capacity * v->elementSize);
     }
-    memcpy(v->buffer + v->count * v->elementSize, element, v->elementSize);
+    v->copy_element(v, v->buffer + v->count * v->elementSize, element);
     v->count ++;
 }
 
@@ -103,9 +110,16 @@ extern void vector_copy(Vector *dst, const Vector *src) {
     dst->elementSize = src->elementSize;
     dst->capacity = src->capacity;
     dst->count = src->count;
+    dst->copy_element = src->copy_element;
     dst->clean_buf = src->clean_buf;
     dst->buffer = (unsigned char *)malloc(dst->capacity * dst->elementSize);
-    memcpy(dst->buffer, src->buffer, src->count * src->elementSize);
+    if (vector_default_copy_element == src->copy_element)
+        memcpy(dst->buffer, src->buffer, src->count * src->elementSize);
+    else {
+        unsigned long i;
+        for (i = 0; i < src->count; i ++)
+            dst->copy_element(dst, dst->buffer + i * dst->elementSize, src->buffer + i * src->elementSize);
+    }
 }
 
 extern int vector_compare(const Vector *v1, const Vector *v2, unsigned long elements) {
