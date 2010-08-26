@@ -62,13 +62,13 @@ extern unsigned long vector_get_size(const Vector *v) {
 
 extern int vector_assign(Vector *v, unsigned long i, const void *element) {
     if (i >= v->count) return -1;
-    memcpy(v->buffer + i * v->elementSize, (const unsigned char *)element, v->elementSize);
+    memcpy(v->buffer + i * v->elementSize, element, v->elementSize);
     return 0;
 }
 
 extern int vector_retrieve(const Vector *v, unsigned long i, void *element) {
     if (i >= v->count) return -1;
-    memcpy((unsigned char *)element, v->buffer + i * v->elementSize, v->elementSize);
+    memcpy(element, v->buffer + i * v->elementSize, v->elementSize);
     return 0;
 }
 
@@ -77,7 +77,7 @@ extern void vector_push_back(Vector *v, const void *element) {
         v->capacity += v->capacity / 2 + 1;
         v->buffer = (unsigned char *)realloc(v->buffer, v->capacity * v->elementSize);
     }
-    memcpy(v->buffer + v->count * v->elementSize, (const unsigned char *)element, v->elementSize);
+    memcpy(v->buffer + v->count * v->elementSize, element, v->elementSize);
     v->count ++;
 }
 
