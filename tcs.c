@@ -840,7 +840,7 @@ void _convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pIndex pInde
     TCS_Chunk parsedChunk;
     tcs_u32 i, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
     Vector vCompChunk;
-    vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, _vector_clean_chunks);
+    vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, vector_default_copy_element, _vector_clean_chunks);    /* low copy */
     count = 0;
     num = vector_get_size(vi);
     for (i = 0; i < num; i ++) {
@@ -869,7 +869,7 @@ void _convert_chunks_flag_1_to_3_with_fps(TCS_pFile pFile, const TCS_pIndex pInd
     TCS_Chunk parsedChunk;
     tcs_u32 i, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
     Vector vCompChunk;
-    vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, _vector_clean_chunks);
+    vector_init(&vCompChunk, sizeof(TCS_Chunk), 0, vector_default_copy_element, _vector_clean_chunks);    /* low copy */
     count = 0;
     num = vector_get_size(vi);
     for (i = 0; i < num; i ++) {
@@ -917,7 +917,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const c
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
-    vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vPreI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     for (i = 0; i < header.chunks; i ++) {
         if (header.minTime >= pIndex[i].first && header.minTime < pIndex[i].last) {
             vector_push_back(&vPreI, &i);
@@ -925,7 +925,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const c
     }
     _convert_chunks_flag_1_to_2_with_ms(pFile, &header, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
     /* convert other chunks */
-    vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     for (t = header.minTime + 1; t < header.maxTime; t += milliseconds) {
         vector_clear(&vI);
         for (i = 0; i < header.chunks; i ++) {
@@ -987,7 +987,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const 
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
-    vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vPreI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     minFrame = (tcs_u32)((tcs_s64)header.minTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (i = 0; i < header.chunks; i ++) {
         if (minFrame >= pIndex[i].first && minFrame < pIndex[i].last) {
@@ -996,7 +996,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const 
     }
     _convert_chunks_flag_1_to_2_with_fps(pFile, &header, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
-    vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (t = minFrame + 1; t < maxFrame; t ++) {
         vector_clear(&vI);
@@ -1061,7 +1061,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const c
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
-    vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vPreI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     for (i = 0; i < header.chunks; i ++) {
         if (header.minTime >= pIndex[i].first && header.minTime < pIndex[i].last) {
             vector_push_back(&vPreI, &i);
@@ -1069,7 +1069,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const c
     }
     _convert_chunks_flag_1_to_3_with_ms(pFile, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
     /* convert other chunks */
-    vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     for (t = header.minTime + 1; t < header.maxTime; t += milliseconds) {
         vector_clear(&vI);
         for (i = 0; i < header.chunks; i ++) {
@@ -1131,7 +1131,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const 
     libtcs_set_file_position_indicator(&outfile, tcs_fpi_header);
     /* get the very first parsed TCS chunk */
     chunks = 0;
-    vector_init(&vPreI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vPreI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     minFrame = (tcs_u32)((tcs_s64)header.minTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (i = 0; i < header.chunks; i ++) {
         if (minFrame >= pIndex[i].first && minFrame < pIndex[i].last) {
@@ -1140,7 +1140,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const 
     }
     _convert_chunks_flag_1_to_3_with_fps(pFile, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
-    vector_init(&vI, sizeof(tcs_u32), 0, _vector_clean_buf);
+    vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, _vector_clean_buf);    /* low copy */
     maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
     for (t = minFrame + 1; t < maxFrame; t ++) {
         vector_clear(&vI);
