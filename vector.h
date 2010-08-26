@@ -52,6 +52,10 @@ extern void vector_default_copy_element(void *v, void *src, const void *dst) {
     memcpy(src, dst, ((Vector *)v)->elementSize);
 }
 
+extern void vector_default_clean_buffer(void *v) {
+    free(((Vector *)v)->buffer);
+}
+
 extern void vector_init(Vector *v, unsigned long elementSize, unsigned long elements, CopyFunc copy_element, CleanFunc clean_buf) {
     Vector vector;
     vector.elementSize = elementSize;
