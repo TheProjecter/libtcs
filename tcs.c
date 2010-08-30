@@ -742,7 +742,7 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
 }
 
 /* libtcs_convert_flag series function - convert compressed TCS file to compressed/non-compressed highest level parsed TCS file */
-void _vector_clean_chunks(void *v) {
+static void _vector_clean_chunks(void *v) {
     unsigned long i, count;
     TCS_pChunk pChunk;
     pChunk = (TCS_pChunk)((Vector *)v)->buffer;
@@ -753,7 +753,7 @@ void _vector_clean_chunks(void *v) {
     free(pChunk);
 }
 
-tcs_u32 _blend_color(tcs_u32 back, tcs_u32 over) {
+static tcs_u32 _blend_color(tcs_u32 back, tcs_u32 over) {
     tcs_u8 r, g, b, a, r1, g1, b1, a1, r2, g2, b2, a2;
     r1 = GETR(back);
     g1 = GETG(back);
@@ -776,7 +776,7 @@ tcs_u32 _blend_color(tcs_u32 back, tcs_u32 over) {
     return MAKERGBA(r, g, b, a);
 }
 
-void _convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
+static void _convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u16 width, height;
@@ -803,7 +803,7 @@ void _convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TCS_pHeader pHea
     *pParsedChunk = parsedChunk;
 }
 
-void _convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
+static void _convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u16 width, height;
@@ -830,7 +830,7 @@ void _convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const TCS_pHeader pHe
     *pParsedChunk = parsedChunk;
 }
 
-void _convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
+static void _convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u32 i, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
@@ -859,7 +859,7 @@ void _convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pIndex pInde
     *pParsedChunk = parsedChunk;
 }
 
-void _convert_chunks_flag_1_to_3_with_fps(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
+static void _convert_chunks_flag_1_to_3_with_fps(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u32 i, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
