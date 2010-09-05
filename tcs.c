@@ -37,6 +37,9 @@ TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_File_
     } else if (tcs_file_create_new == type) {
         pFile->fp = fopen(filename, "wb");    /* file should open in binary mode */
         if (!pFile->fp) return tcs_error_file_cant_create;
+    } else if (tcs_file_read_write == type) {
+        pFile->fp = fopen(filename, "r+b");    /* file should open in binary mode */
+        if (!pFile->fp) return tcs_error_file_cant_open;
     }
     return tcs_error_success;
 }
@@ -99,16 +102,21 @@ TCS_Error_Code libtcs_set_header(TCS_pHeader pHeader, tcs_unit flag, tcs_u16 wid
 }
 
 TCS_Error_Code libtcs_read_header(TCS_pFile pFile, TCS_pHeader pHeader, tcs_bool keepPosition) {
+    int count;
     fpos_t position;
     if (!pFile || !pHeader) return tcs_error_null_pointer;
+    count = sizeof(TCS_Header) >> 2;
     if (keepPosition) {
         fgetpos(pFile->fp, &position);    /* remember file position indicator */
         fseek(pFile->fp, 0, SEEK_SET);
-        fread(pHeader, sizeof(tcs_unit), sizeof(TCS_Header) >> 2, pFile->fp);
+        if (fread(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) {
+            fsetpos(pFile->fp, &position);    /* reset file position indicator */
+            return tcs_error_file_while_reading;
+        }
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
     } else {
         fseek(pFile->fp, 0, SEEK_SET);
-        fread(pHeader, sizeof(tcs_unit), sizeof(TCS_Header) >> 2, pFile->fp);
+        if (fread(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_reading;
     }
     return tcs_error_success;
 }
@@ -121,7 +129,10 @@ TCS_Error_Code libtcs_write_header(TCS_pFile pFile, const TCS_pHeader pHeader, t
     if (keepPosition) {
         fgetpos(pFile->fp, &position);    /* remember file position indicator */
         fseek(pFile->fp, 0, SEEK_SET);
-        if (fwrite(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_writing;
+        if (fwrite(pHeader, sizeof(tcs_unit), count, pFile->fp) != count) {
+            fsetpos(pFile->fp, &position);
+            return tcs_error_file_while_writing;
+        }
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
     } else {
         fseek(pFile->fp, 0, SEEK_SET);
@@ -161,7 +172,10 @@ TCS_Error_Code libtcs_read_chunk(TCS_pFile pFile, TCS_pChunk pChunk) {
     if (fread(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return tcs_error_file_while_reading;    /* startTime endTime layer_and_count takes up 3 tcs_unit */
     count = GETCOUNT(pChunk->layer_and_count) << 1;    /* every pos_and_color takes up 2 tcs_unit */
     pChunk->pos_and_color = (tcs_unit *)malloc(count * sizeof(tcs_unit));
-    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_reading;
+    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) {
+        free(pChunk->pos_and_color);
+        return tcs_error_file_while_reading;
+    }
     return tcs_error_success;
 }
 
@@ -180,7 +194,10 @@ TCS_Error_Code libtcs_read_specified_chunk(TCS_pFile pFile, tcs_s64 offset, TCS_
     if (fread(pChunk, sizeof(tcs_unit), 3, pFile->fp) != 3) return tcs_error_file_while_reading;    /* startTime endTime layer_and_count takes up 3 tcs_unit */
     count = GETCOUNT(pChunk->layer_and_count) << 1;    /* every pos_and_color takes up 2 tcs_unit */
     pChunk->pos_and_color = (tcs_unit *)malloc(count * sizeof(tcs_unit));
-    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) return tcs_error_file_while_reading;
+    if (fread(pChunk->pos_and_color, sizeof(tcs_unit), count, pFile->fp) != count) {
+        free(pChunk->pos_and_color);
+        return tcs_error_file_while_reading;
+    }
     return tcs_error_success;
 }
 
@@ -217,7 +234,7 @@ TCS_Error_Code libtcs_write_chunks(TCS_pFile pFile, const TCS_pChunk pChunk, tcs
     return error;
 }
 
-TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_unit **pBuf, tcs_u32 *chunks, tcs_u32 *units) {
+TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_unit **pBuf, tcs_u32 *pChunkCount, tcs_u32 *pUnitCount) {
     tcs_u32 i, count, compCount, singleCount;
     tcs_unit prevStartTime, prevEndTime, prevLayer;
     tcs_unit *compBuf;
@@ -260,12 +277,12 @@ TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32
     }
     realloc(compBuf, count * sizeof(tcs_unit));    /* sweep no-used memory */
     *pBuf = compBuf;
-    *chunks = rawChunks - compCount;
-    *units = count;
+    *pChunkCount = rawChunks - compCount;
+    *pUnitCount = count;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pChunk *ppChunk, tcs_u32 *chunks) {
+TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pChunk *ppChunk, tcs_u32 *pChunkCount) {
     tcs_unit *buf;
     tcs_u32 i, index, size, compChunks, units;
     TCS_Error_Code error;
@@ -285,11 +302,11 @@ TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 
     }
     free(buf);
     *ppChunk = pChunk;
-    *chunks = compChunks;
+    *pChunkCount = compChunks;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf, tcs_u32 *rawChunks, tcs_u32 *units) {
+TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf, tcs_u32 *pRawChunkCount, tcs_u32 *pUnitCount) {
     tcs_u32 i, count, size;    /* count equals *rawChunks */
     tcs_unit *buf;
     if (!pChunk) return tcs_error_null_pointer;
@@ -304,22 +321,22 @@ TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf,
         buf[5 * i + 4] = pChunk->pos_and_color[2 * i + 1];
     }
     *pBuf = buf;
-    *rawChunks = count;
-    *units = size >> 2;
+    *pRawChunkCount = count;
+    *pUnitCount = size >> 2;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_convert_chunk(const TCS_pChunk pChunk, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks) {
+TCS_Error_Code libtcs_convert_chunk(const TCS_pChunk pChunk, TCS_pRawChunk *ppRawChunk, tcs_u32 *pRawChunkCount) {
     tcs_u32 units;
     tcs_unit *buf;
     TCS_Error_Code error;
-    error = libtcs_uncompress_chunk(pChunk, &buf, rawChunks, &units);
+    error = libtcs_uncompress_chunk(pChunk, &buf, pRawChunkCount, &units);
     if (tcs_error_success != error) return error;
     *ppRawChunk = (TCS_pRawChunk)buf;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_unit **pBuf, tcs_u32 *rawChunks, tcs_u32 *units, tcs_bool freeChunks) {
+TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_unit **pBuf, tcs_u32 *pRawChunkCount, tcs_u32 *pUnitCount, tcs_bool freeChunks) {
     tcs_u32 i, j, index, count, size;    /* count equals *rawChunks */
     tcs_unit *buf;
     if (!pChunk) return tcs_error_null_pointer;
@@ -357,16 +374,16 @@ TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_u
         }
     }
     *pBuf = buf;
-    *rawChunks = count;
-    *units = size >> 2;
+    *pRawChunkCount = count;
+    *pUnitCount = size >> 2;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks, tcs_bool freeChunks) {
+TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *pRawChunkCount, tcs_bool freeChunks) {
     tcs_u32 units;
     tcs_unit *buf;
     TCS_Error_Code error;
-    error = libtcs_uncompress_chunks(pChunk, chunks, &buf, rawChunks, &units, freeChunks);
+    error = libtcs_uncompress_chunks(pChunk, chunks, &buf, pRawChunkCount, &units, freeChunks);
     if (tcs_error_success != error) return error;
     *ppRawChunk = (TCS_pRawChunk)buf;
     return tcs_error_success;
@@ -393,6 +410,29 @@ TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width,
     pChunk->layer_and_count = MAKECL(count, GETLAYER(pChunk->layer_and_count));
     pChunk->pos_and_color = (tcs_unit *)realloc(pChunk->pos_and_color, size);
     return tcs_error_success;
+}
+
+tcs_u32 libtcs_blend_color(tcs_u32 back, tcs_u32 over) {
+    tcs_u8 r, g, b, a, r1, g1, b1, a1, r2, g2, b2, a2;
+    r1 = GETR(back);
+    g1 = GETG(back);
+    b1 = GETB(back);
+    a1 = GETA(back);
+    r2 = GETR(over);
+    g2 = GETG(over);
+    b2 = GETB(over);
+    a2 = GETA(over);
+    a = 255 - (255 - a1) * (255 - a2) / 255;
+    if (0 != a) {
+        r = (r2 * a2 + r1 * a1 * (255 - a2) / 255) / a;
+        g = (g2 * a2 + g1 * a1 * (255 - a2) / 255) / a;
+        b = (b2 * a2 + b1 * a1 * (255 - a2) / 255) / a;
+    } else {
+        r = 0;
+        g = 0;
+        b = 0;
+    }
+    return MAKERGBA(r, g, b, a);
 }
 
 TCS_Error_Code libtcs_convert_chunk_to_rgba(const TCS_pChunk pChunk, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA) {
@@ -487,7 +527,7 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *minPosX, tcs_u16 *minPosY, tcs_u16 *maxPosX, tcs_u16 *maxPosY) {
+TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *pMinPosX, tcs_u16 *pMinPosY, tcs_u16 *pMaxPosX, tcs_u16 *pMaxPosY) {
     tcs_u32 i;
     tcs_u16 minX, minY, maxX, maxY;
     if (!pChunk) return tcs_error_null_pointer;
@@ -502,17 +542,54 @@ TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *mi
         maxX = __max(maxX, GETPOSX(pChunk->pos_and_color[i << 1]));
         maxY = __max(maxY, GETPOSY(pChunk->pos_and_color[i << 1]));
     }
+    *pMinPosX = minX;
+    *pMinPosY = minY;
+    *pMaxPosX = maxX;
+    *pMaxPosY = maxY;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
+TCS_Error_Code libtcs_get_raw_chunks_min_max_time(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_u32 *pMinTime, tcs_u32 *pMaxTime) {
+    tcs_u32 i, minTime, maxTime;
+    minTime = TCS_INIT_MIN_TIME;
+    maxTime = TCS_INIT_MAX_TIME;
+    if (!pRawChunk) return tcs_error_null_pointer;
+    for (i = 0; i < rawChunks; i ++) {
+        minTime = __min(minTime, pRawChunk[i].startTime);
+        maxTime = __max(maxTime, pRawChunk[i].endTime);
+    }
+    *pMinTime = minTime;
+    *pMaxTime = maxTime;
+    return tcs_error_success;
+}
+
+TCS_Error_Code libtcs_get_chunks_min_max_time(const TCS_pChunk pChunk, tcs_u32 chunks, tcs_u32 *pMinTime, tcs_u32 *pMaxTime) {
+    tcs_u32 i, minTime, maxTime;
+    minTime = TCS_INIT_MIN_TIME;
+    maxTime = TCS_INIT_MAX_TIME;
+    if (!pChunk) return tcs_error_null_pointer;
+    for (i = 0; i < chunks; i ++) {
+        minTime = __min(minTime, pChunk[i].startTime);
+        maxTime = __max(maxTime, pChunk[i].endTime);
+    }
+    *pMinTime = minTime;
+    *pMaxTime = maxTime;
+    return tcs_error_success;
+}
+
+TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *pChunkCount) {
+    TCS_Error_Code error;
     fpos_t position;
     tcs_u32 count;    /* the same as *chunks */
     tcs_unit buf[1];    /* to hold layer_and_count */
     TCS_Header header;
     if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
-    libtcs_read_header(pFile, &header, 0);
+    error = libtcs_read_header(pFile, &header, 0);
+    if (tcs_error_success != error) {
+        fsetpos(pFile->fp, &position);    /* reset file position indicator */
+        return error;
+    }
     if (TCS_FLAG_RAW == header.flag) return tcs_error_file_type_not_match;
     fseek(pFile->fp, 2 * sizeof(tcs_unit), SEEK_CUR);    /* reach the first layer_and_count */
     count = 0;
@@ -524,11 +601,12 @@ TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks) {
         } else break;
     }
     fsetpos(pFile->fp, &position);    /* reset file position indicator */
-    *chunks = count;
+    *pChunkCount = count;
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_unit *minTime, tcs_unit *maxTime, tcs_unit *chunks) {
+TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_unit *pMinTime, tcs_unit *pMaxTime, tcs_unit *pChunkCount) {
+    TCS_Error_Code error;
     fpos_t position;
     tcs_u32 mintime, maxtime, count;    /* count is the same as *chunks */
     tcs_unit buf[3];    /* to hold startTime endTime layer_and_count */
@@ -538,7 +616,11 @@ TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_uni
     maxtime = TCS_INIT_MAX_TIME;
     count = 0;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
-    libtcs_read_header(pFile, &header, 0);
+    error = libtcs_read_header(pFile, &header, 0);
+    if (tcs_error_success != error) {
+        fsetpos(pFile->fp, &position);    /* reset file position indicator */
+        return error;
+    }
     if (TCS_FLAG_RAW == header.flag) {
         while (1) {
             fread(buf, sizeof(tcs_unit), 2, pFile->fp);    /* startTime endTime */
@@ -561,13 +643,14 @@ TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_uni
         }
     }
     fsetpos(pFile->fp, &position);    /* reset file position indicator */
-    *minTime = mintime;
-    *maxTime = maxtime;
-    *chunks = count;
+    *pMinTime = mintime;
+    *pMaxTime = maxtime;
+    *pChunkCount = count;
     return tcs_error_success;
 }
 
 TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pIndex *ppIndex) {
+    TCS_Error_Code error;
     fpos_t position;
     TCS_pIndex pIndex;
     TCS_Header header;
@@ -576,7 +659,11 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pInde
     tcs_unit buf[3];    /* a temp buffer to hold startTime endTime layer_and_count */
     if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
-    libtcs_read_header(pFile, &header, 0);
+    error = libtcs_read_header(pFile, &header, 0);
+    if (tcs_error_success != error) {
+        fsetpos(pFile->fp, &position);    /* reset file position indicator */
+        return error;
+    }
     if (TCS_FLAG_COMPRESSED != header.flag) {
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
         return tcs_error_file_type_not_match;
@@ -625,6 +712,7 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file(const TCS_pFile pFile, TCS_pInde
 }
 
 TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pIndex *ppIndex) {
+    TCS_Error_Code error;
     fpos_t position;
     TCS_pIndex pIndex;
     TCS_Header header;
@@ -633,7 +721,11 @@ TCS_Error_Code libtcs_parse_compressed_tcs_file_with_fps(const TCS_pFile pFile, 
     tcs_unit buf[3];    /* a temp buffer to hold startTime endTime layer_and_count */
     if (!pFile) return tcs_error_null_pointer;
     fgetpos(pFile->fp, &position);    /* remember file position indicator */
-    libtcs_read_header(pFile, &header, 0);
+    error = libtcs_read_header(pFile, &header, 0);
+    if (tcs_error_success != error) {
+        fsetpos(pFile->fp, &position);    /* reset file position indicator */
+        return error;
+    }
     if (TCS_FLAG_COMPRESSED != header.flag) {
         fsetpos(pFile->fp, &position);    /* reset file position indicator */
         return tcs_error_file_type_not_match;
@@ -753,30 +845,7 @@ static void _vector_clean_chunks(void *v) {
     free(pChunk);
 }
 
-static tcs_u32 _blend_color(tcs_u32 back, tcs_u32 over) {
-    tcs_u8 r, g, b, a, r1, g1, b1, a1, r2, g2, b2, a2;
-    r1 = GETR(back);
-    g1 = GETG(back);
-    b1 = GETB(back);
-    a1 = GETA(back);
-    r2 = GETR(over);
-    g2 = GETG(over);
-    b2 = GETB(over);
-    a2 = GETA(over);
-    a = 255 - (255 - a1) * (255 - a2) / 255;
-    if (0 != a) {
-        r = (r2 * a2 + r1 * a1 * (255 - a2) / 255) / a;
-        g = (g2 * a2 + g1 * a1 * (255 - a2) / 255) / a;
-        b = (b2 * a2 + b1 * a1 * (255 - a2) / 255) / a;
-    } else {
-        r = 0;
-        g = 0;
-        b = 0;
-    }
-    return MAKERGBA(r, g, b, a);
-}
-
-static void _convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
+static void _libtcs_convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u16 width, height;
@@ -803,7 +872,7 @@ static void _convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TCS_pHead
     *pParsedChunk = parsedChunk;
 }
 
-static void _convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
+static void _libtcs_convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const TCS_pHeader pHeader, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u16 width, height;
@@ -830,7 +899,7 @@ static void _convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const TCS_pHea
     *pParsedChunk = parsedChunk;
 }
 
-static void _convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
+static void _libtcs_convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_unit t, tcs_u8 milliseconds, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u32 i, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
@@ -859,7 +928,7 @@ static void _convert_chunks_flag_1_to_3_with_ms(TCS_pFile pFile, const TCS_pInde
     *pParsedChunk = parsedChunk;
 }
 
-static void _convert_chunks_flag_1_to_3_with_fps(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
+static void _libtcs_convert_chunks_flag_1_to_3_with_fps(TCS_pFile pFile, const TCS_pIndex pIndex, const Vector *vi, tcs_u32 frame, tcs_u32 fpsNumerator, tcs_u32 fpsDenominator, TCS_pChunk pParsedChunk) {
     TCS_Chunk compressedChunk;
     TCS_Chunk parsedChunk;
     tcs_u32 i, index, num, count, offset;    /* count indicates the amount of packed DIPs in a parsed chunk, offset is used in parsedChunk.pos_and_color */
@@ -918,7 +987,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const c
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_2_with_ms(pFile, &header, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
+    _libtcs_convert_chunks_flag_1_to_2_with_ms(pFile, &header, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, vector_default_clean_buffer);    /* low copy */
     for (t = header.minTime + 1; t < header.maxTime; t += milliseconds) {
@@ -940,7 +1009,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_ms(const TCS_pFile pFile, const c
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_2_with_ms(pFile, &header, pIndex, &vPreI, t, milliseconds, &parsedChunk);
+            _libtcs_convert_chunks_flag_1_to_2_with_ms(pFile, &header, pIndex, &vPreI, t, milliseconds, &parsedChunk);
         }
     }
     free(pIndex);
@@ -989,7 +1058,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const 
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_2_with_fps(pFile, &header, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
+    _libtcs_convert_chunks_flag_1_to_2_with_fps(pFile, &header, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, vector_default_clean_buffer);    /* low copy */
     maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
@@ -1012,7 +1081,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_2_with_fps(const TCS_pFile pFile, const 
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_2_with_fps(pFile, &header, pIndex, &vPreI, t, fpsNumerator, fpsDenominator, &parsedChunk);
+            _libtcs_convert_chunks_flag_1_to_2_with_fps(pFile, &header, pIndex, &vPreI, t, fpsNumerator, fpsDenominator, &parsedChunk);
         }
     }
     free(pIndex);
@@ -1062,7 +1131,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const c
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_3_with_ms(pFile, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
+    _libtcs_convert_chunks_flag_1_to_3_with_ms(pFile, pIndex, &vPreI, header.minTime, milliseconds, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, vector_default_clean_buffer);    /* low copy */
     for (t = header.minTime + 1; t < header.maxTime; t += milliseconds) {
@@ -1084,7 +1153,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_ms(const TCS_pFile pFile, const c
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_3_with_ms(pFile, pIndex, &vPreI, t, milliseconds, &parsedChunk);
+            _libtcs_convert_chunks_flag_1_to_3_with_ms(pFile, pIndex, &vPreI, t, milliseconds, &parsedChunk);
         }
     }
     free(pIndex);
@@ -1133,7 +1202,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const 
             vector_push_back(&vPreI, &i);
         }
     }
-    _convert_chunks_flag_1_to_3_with_fps(pFile, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
+    _libtcs_convert_chunks_flag_1_to_3_with_fps(pFile, pIndex, &vPreI, minFrame, fpsNumerator, fpsDenominator, &parsedChunk);
     /* convert other chunks */
     vector_init(&vI, sizeof(tcs_u32), 0, vector_default_copy_element, vector_default_clean_buffer);    /* low copy */
     maxFrame = (tcs_u32)((tcs_s64)header.maxTime * fpsNumerator / (fpsDenominator * 1000)) + 1;    /* note: +1 is just intend to make it compatible with VSFilter */
@@ -1156,7 +1225,7 @@ TCS_Error_Code libtcs_convert_flag_1_to_3_with_fps(const TCS_pFile pFile, const 
             libtcs_write_chunk(&outfile, &parsedChunk);
             libtcs_free_chunk(&parsedChunk);
             chunks ++;
-            _convert_chunks_flag_1_to_3_with_fps(pFile, pIndex, &vPreI, t, fpsNumerator, fpsDenominator, &parsedChunk);
+            _libtcs_convert_chunks_flag_1_to_3_with_fps(pFile, pIndex, &vPreI, t, fpsNumerator, fpsDenominator, &parsedChunk);
         }
     }
     free(pIndex);

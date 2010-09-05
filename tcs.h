@@ -241,7 +241,8 @@ typedef enum _tcs_error_code {
  */
 typedef enum _tcs_file_open_type {
     tcs_file_open_existing,    /**< open an existing TCS file */
-    tcs_file_create_new    /**< create a new TCS file */
+    tcs_file_create_new,    /**< create a new TCS file */
+    tcs_file_read_write     /**< open a TCS file with `read-write' permission */
 } TCS_File_Open_Type;
 
 /**
@@ -459,11 +460,11 @@ extern TCS_Error_Code libtcs_write_chunks(TCS_pFile pFile, const TCS_pChunk pChu
  * @param pRawChunk the address of TCS_RawChunk array that is going to be compressed
  * @param rawChunks the amount of input raw chunks
  * @param pBuf a pointer to a block of memory buffer that is going to hold the compressed data
- * @param chunks the amount of output compressed chunks
- * @param units the amount of tcs_unit in the buffer
+ * @param pChunkCount pointer to the amount of output compressed chunks
+ * @param pUnitCount pointer to the amount of tcs_unit in the buffer
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_unit **pBuf, tcs_u32 *chunks, tcs_u32 *units);
+extern TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_unit **pBuf, tcs_u32 *pChunkCount, tcs_u32 *pUnitCount);
 
 /**
  * Convert raw chunks to compressed chunks, the result of compression largely depends on the 
@@ -475,42 +476,42 @@ extern TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, 
  * @param pRawChunk the address of TCS_RawChunk array that is going to be compressed
  * @param rawChunks the amount of input raw chunks
  * @param ppChunk a pointer to TCS_pChunk that is going to hold the compressed data
- * @param chunks the amount of output compressed chunks
+ * @param pChunkCount pointer to the amount of output compressed chunks
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pChunk *ppChunk, tcs_u32 *chunks);
+extern TCS_Error_Code libtcs_convert_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pChunk *ppChunk, tcs_u32 *pChunkCount);
 
 /**
  * Uncompress a compressed chunk (in stream).
  * @param pChunk a pointer to a compressed TCS chunk that is going to be uncompressed
  * @param pBuf a pointer to a block of memory buffer that is going to hold the uncompressed data
- * @param rawChunks the amount of output raw chunks
- * @param units the amount of tcs_unit in the buffer
+ * @param pRawChunkCount pointer to the amount of output raw chunks
+ * @param pUnitCount pointer to the amount of tcs_unit in the buffer
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf, tcs_u32 *rawChunks, tcs_u32 *units);
+extern TCS_Error_Code libtcs_uncompress_chunk(const TCS_pChunk pChunk, tcs_unit **pBuf, tcs_u32 *pRawChunkCount, tcs_u32 *pUnitCount);
 
 /**
  * Convert a compressed chunk to raw chunks.
  * @see libtcs_uncompress_chunk()
  * @param pChunk a pointer to a compressed TCS chunk that is going to be uncompressed
  * @param ppRawChunk a pointer to TCS_pRawChunk that is going to hold the uncompressed data
- * @param rawChunks the amount of output raw chunks
+ * @param pRawChunkCount pointer to the amount of output raw chunks
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_chunk(const TCS_pChunk pChunk, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks);
+extern TCS_Error_Code libtcs_convert_chunk(const TCS_pChunk pChunk, TCS_pRawChunk *ppRawChunk, tcs_u32 *pRawChunkCount);
 
 /**
  * Uncompress compressed chunks (in stream).
  * @param pChunk the address of TCS_Chunk array that is going to be uncompressed
  * @param chunks the amount of input compressed chunks
  * @param pBuf a pointer to a block of memory buffer that is going to hold the uncompressed data
- * @param rawChunks the amount of output raw chunks
- * @param units the amount of tcs_unit in the buffer
+ * @param pRawChunkCount pointer to the amount of output raw chunks
+ * @param pUnitCount pointer to the amount of tcs_unit in the buffer
  * @param freeChunks TCS_TRUE - free chunks after writing them to file, TCS_FALSE - keep chunks
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_unit **pBuf, tcs_u32 *rawChunks, tcs_u32 *units, tcs_bool freeChunks);
+extern TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks, tcs_unit **pBuf, tcs_u32 *pRawChunkCount, tcs_u32 *pUnitCount, tcs_bool freeChunks);
 
 /**
  * Convert compressed chunks to raw chunks.
@@ -518,11 +519,11 @@ extern TCS_Error_Code libtcs_uncompress_chunks(TCS_pChunk pChunk, tcs_u32 chunks
  * @param pChunk the address of TCS_Chunk array that is going to be uncompressed
  * @param chunks the amount of input compressed chunks
  * @param ppRawChunk a pointer to TCS_pRawChunk that is going to hold the uncompressed data
- * @param rawChunks the amount of output raw chunks
+ * @param pRawChunkCount pointer to the amount of output raw chunks
  * @param freeChunks TCS_TRUE - free chunks after writing them to file, TCS_FALSE - keep chunks
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *rawChunks, tcs_bool freeChunks);
+extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, TCS_pRawChunk *ppRawChunk, tcs_u32 *pRawChunkCount, tcs_bool freeChunks);
 
 /**
  * Convert a RGBA array to compressed chunk. 
@@ -537,6 +538,15 @@ extern TCS_Error_Code libtcs_convert_chunks(TCS_pChunk pChunk, tcs_u32 chunks, T
  * @return TCS_Error_Code
  */
 extern TCS_Error_Code libtcs_convert_rgba_to_chunk(const tcs_byte *rgba, tcs_u16 width, tcs_u16 height, TCS_pChunk pChunk);
+
+/**
+ * Blend two colors.
+ *
+ * @param back color of the background
+ * @param over color of the overlay
+ * @return the blended color
+ */
+extern tcs_u32 libtcs_blend_color(tcs_u32 back, tcs_u32 over);
 
 /**
  * Convert a chunk to RGBA array. 
@@ -582,13 +592,33 @@ extern TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, t
 /**
  * Get minPosX minPosY maxPosX maxPosY of a chunk.
  * @param pChunk a pointer to TCS_Chunk structure
- * @param minPosX holds the minimal x-axis value of the target chunk
- * @param minPosY holds the minimal y-axis value of the target chunk
- * @param maxPosX holds the maximal x-axis value of the target chunk
- * @param maxPosY holds the maximal y-axis value of the target chunk
+ * @param pMinPosX pointer to the minimal x-axis value of the target chunk
+ * @param pMinPosY pointer to the minimal y-axis value of the target chunk
+ * @param pMaxPosX pointer to the maximal x-axis value of the target chunk
+ * @param pMaxPosY pointer to the maximal y-axis value of the target chunk
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *minPosX, tcs_u16 *minPosY, tcs_u16 *maxPosX, tcs_u16 *maxPosY);
+extern TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *pMinPosX, tcs_u16 *pMinPosY, tcs_u16 *pMaxPosX, tcs_u16 *pMaxPosY);
+
+/**
+ * Get minimal and maximal time of raw chunks.
+ * @param pRawChunk a pointer to TCS_RawChunk structure
+ * @param rawChunks the amount of input raw chunks
+ * @param pMinTime pointer to the minimal start time value of the target chunks
+ * @param pMaxTime pointer to the maximal end time value of the target chunks
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_get_raw_chunks_min_max_time(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_u32 *pMinTime, tcs_u32 *pMaxTime);
+
+/**
+ * Get minimal and maximal time of chunks.
+ * @param pChunk a pointer to TCS_Chunk structure
+ * @param chunks the amount of input compressed chunks
+ * @param pMinTime pointer to the minimal start time value of the target chunks
+ * @param pMaxTime pointer to the maximal end time value of the target chunks
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_get_chunks_min_max_time(const TCS_pChunk pChunk, tcs_u32 chunks, tcs_u32 *pMinTime, tcs_u32 *pMaxTime);
 
 /**
  * Count the chunks of TCS FX data in compressed/parsed TCS file. 
@@ -597,10 +627,10 @@ extern TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_
  *
  * @see libtcs_get_min_max_time_and_chunks()
  * @param pFile a pointer to TCS_File structure
- * @param chunks indicates the amount of chunks in TCS file
+ * @param pChunkCount pointer to the amount of chunks in TCS file
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunks);
+extern TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *pChunkCount);
 
 /**
  * Get minTime and maxTime of TCS FX data in TCS file and also count the chunks. 
@@ -608,12 +638,12 @@ extern TCS_Error_Code libtcs_count_chunks(const TCS_pFile pFile, tcs_unit *chunk
  *
  * @see libtcs_count_chunks()
  * @param pFile a pointer to TCS_File structure
- * @param minTime indicates the first time that the TCS FX has taken effects
- * @param maxTime indicates the first time that the TCS FX has ended its effects
- * @param chunks indicates the amount of chunks in TCS file
+ * @param pMinTime pointer to the first time that the TCS FX has taken effects
+ * @param pMaxTime pointer to the first time that the TCS FX has ended its effects
+ * @param pChunkCount pointer to the amount of chunks in TCS file
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_unit *minTime, tcs_unit *maxTime, tcs_unit *chunks);
+extern TCS_Error_Code libtcs_get_min_max_time_and_chunks(const TCS_pFile pFile, tcs_unit *pMinTime, tcs_unit *pMaxTime, tcs_unit *pChunkCount);
 
 /**
  * Parse a compressed TCS file. 
