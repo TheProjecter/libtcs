@@ -549,17 +549,13 @@ TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_u16 *pM
     return tcs_error_success;
 }
 
-TCS_Error_Code libtcs_get_raw_chunks_min_max_time(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_u32 *pMinTime, tcs_u32 *pMaxTime) {
-    tcs_u32 i, minTime, maxTime;
-    minTime = TCS_INIT_MIN_TIME;
-    maxTime = TCS_INIT_MAX_TIME;
-    if (!pRawChunk) return tcs_error_null_pointer;
+TCS_Error_Code libtcs_get_raw_chunks_min_max_time(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pHeader pHeader) {
+    tcs_u32 i;
+    if (!pRawChunk || !pHeader) return tcs_error_null_pointer;
     for (i = 0; i < rawChunks; i ++) {
-        minTime = __min(minTime, pRawChunk[i].startTime);
-        maxTime = __max(maxTime, pRawChunk[i].endTime);
+        pHeader->minTime = __min(pHeader->minTime, pRawChunk[i].startTime);
+        pHeader->maxTime = __max(pHeader->maxTime, pRawChunk[i].endTime);
     }
-    *pMinTime = minTime;
-    *pMaxTime = maxTime;
     return tcs_error_success;
 }
 

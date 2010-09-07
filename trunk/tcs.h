@@ -604,11 +604,10 @@ extern TCS_Error_Code libtcs_get_chunk_min_max_pos(const TCS_pChunk pChunk, tcs_
  * Get minimal and maximal time of raw chunks.
  * @param pRawChunk a pointer to TCS_RawChunk structure
  * @param rawChunks the amount of input raw chunks
- * @param pMinTime pointer to the minimal start time value of the target chunks
- * @param pMaxTime pointer to the maximal end time value of the target chunks
+ * @param pHeader pointer to TCS_Header structure that is going to change its minimal start time value and maximal end time value from the target chunks
  * @return TCS_Error_Code
  */
-extern TCS_Error_Code libtcs_get_raw_chunks_min_max_time(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, tcs_u32 *pMinTime, tcs_u32 *pMaxTime);
+extern TCS_Error_Code libtcs_get_raw_chunks_min_max_time(const TCS_pRawChunk pRawChunk, tcs_u32 rawChunks, TCS_pHeader pHeader);
 
 /**
  * Get minimal and maximal time of chunks.
