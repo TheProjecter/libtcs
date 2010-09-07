@@ -275,7 +275,7 @@ TCS_Error_Code libtcs_compress_raw_chunks(const TCS_pRawChunk pRawChunk, tcs_u32
             count += 5;
         }
     }
-    realloc(compBuf, count * sizeof(tcs_unit));    /* sweep no-used memory */
+    compBuf = (tcs_unit *)realloc(compBuf, count * sizeof(tcs_unit));    /* sweep no-used memory */
     *pBuf = compBuf;
     *pChunkCount = rawChunks - compCount;
     *pUnitCount = count;
