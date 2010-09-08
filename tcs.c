@@ -44,6 +44,21 @@ TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_File_
     return tcs_error_success;
 }
 
+TCS_Error_Code libtcs_open_file_w(TCS_pFile pFile, const wchar_t *filename, TCS_File_Open_Type type) {
+    if (!pFile) return tcs_error_null_pointer;
+    if (tcs_file_open_existing == type) {
+        pFile->fp = _wfopen(filename, L"rb");    /* file should open in binary mode */
+        if (!pFile->fp) return tcs_error_file_cant_open;
+    } else if (tcs_file_create_new == type) {
+        pFile->fp = _wfopen(filename, L"wb");    /* file should open in binary mode */
+        if (!pFile->fp) return tcs_error_file_cant_create;
+    } else if (tcs_file_read_write == type) {
+        pFile->fp = _wfopen(filename, L"r+b");    /* file should open in binary mode */
+        if (!pFile->fp) return tcs_error_file_cant_open;
+    }
+    return tcs_error_success;
+}
+
 TCS_Error_Code libtcs_close_file(TCS_pFile pFile) {
     if (!pFile) return tcs_error_null_pointer;
     fclose(pFile->fp);

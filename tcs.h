@@ -262,12 +262,23 @@ extern "C" {
 
 /**
  * Open an existing file or create a new file.
+ * @see libtcs_open_file_w()
  * @param pFile a pointer to TCS_File structure
  * @param filename specify the file name which is to be opened
  * @param type specify file opening type
  * @return TCS_Error_Code
  */
 extern TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_File_Open_Type type);
+
+/**
+ * Open an existing file or create a new file.
+ * @see libtcs_open_file()
+ * @param pFile a pointer to TCS_File structure
+ * @param filename specify the file name which is to be opened
+ * @param type specify file opening type
+ * @return TCS_Error_Code
+ */
+extern TCS_Error_Code libtcs_open_file_w(TCS_pFile pFile, const wchar_t *filename, TCS_File_Open_Type type);
 
 /**
  * Close the tcs file handler associated with TCS_File structure.
