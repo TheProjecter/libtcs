@@ -515,6 +515,7 @@ TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs_u16 wi
     return tcs_error_success;
 }
 
+/*
 TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight) {
     tcs_u16 h, w;
     tcs_u32 pitch, targetPitch, targetSize, Sx, Sy, Dx, Dy;
@@ -525,12 +526,12 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
     targetSize = targetHeight * targetPitch;
     dst = (tcs_byte *)malloc(targetSize);
     for (h = 0; h < targetHeight; h ++) {
-        Dy = h * targetPitch;    /* Destination buffer postion-y */
-        Sy = (h * height / targetHeight) * pitch;  /* Source buffer postion-y */
+        Dy = h * targetPitch;    /* Destination buffer postion-y 
+        Sy = (h * height / targetHeight) * pitch;  /* Source buffer postion-y 
         for (w = 0; w < targetWidth; w ++) {
-            Dx = w << 2;       /* Destination buffer postion-x */
-            Sx = (w * width / targetWidth) << 2;    /* Source buffer postion-x */
-            if (0 != src[Sy + Sx + 3]) {             /* we predict that there are a lot of transparent pixels */
+            Dx = w << 2;       /* Destination buffer postion-x 
+            Sx = (w * width / targetWidth) << 2;    /* Source buffer postion-x 
+            if (0 != src[Sy + Sx + 3]) {             /* we predict that there are a lot of transparent pixels 
                 dst[Dy + Dx]     = src[Sy + Sx];
                 dst[Dy + Dx + 1] = src[Sy + Sx + 1];
                 dst[Dy + Dx + 2] = src[Sy + Sx + 2];
@@ -539,6 +540,97 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
         }
     }
     *pRGBA = dst;
+    return tcs_error_success;
+}
+*/
+
+static double _libtcs_filter_MitchellNetravali(double x, double b, double c) {
+    double p0, p2, p3, q0, q1, q2, q3;
+    p0 = (   6 -  2 * b          ) / 6.0;
+    p2 = ( -18 + 12 * b +  6 * c ) / 6.0;
+    p3 = (  12 -  9 * b -  6 * c ) / 6.0;
+    q0 = (        8 * b + 24 * c ) / 6.0;
+    q1 = (     - 12 * b - 48 * c ) / 6.0;
+    q2 = (        6 * b + 30 * c ) / 6.0;
+    q3 = (     -      b -  6 * c ) / 6.0;
+    if (x < 0) x = -x;    /* x = fabs(x) */
+    if (x < 1)
+        return p0 + (p2 + p3 * x) * x * x;
+    else if (x < 2)
+        return q0 + (q1 + (q2 + q3 * x) * x) * x;
+    else return 0;
+}
+
+static double _libtcs_filter_cubic(double x, double a) {
+    if (x < 0) x = -x;    /* x = fabs(x) */
+    if (x < 1) return (a + 2) * x * x * x - (a + 3) * x * x + 1;
+    else if (x < 2) return a * x * x * x - 5 * a * x * x + 8 * a * x - 4 * a;
+    else return 0;
+}
+
+static double _libtcs_filter_BSpline(double x) {
+    if (x < -2) return 0;
+	else if (x < -1) return (2 + x) * (2 + x) * (2 + x) / 6.0;
+	else if (x < 0) return (4 + (-6 - 3 * x) * x * x) / 6.0;
+	else if (x < 1) return (4 + (-6 + 3 * x) * x * x) / 6.0;
+	else if (x < 2) return (2 - x) * (2 - x) * (2 - x) / 6.0;
+	else return 0;
+}
+
+TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight) {
+	int h, w, m, n, index;
+	double fx, fy;
+    int ix, iy, xx, yy;
+	double xScale, yScale, r1, r2;
+    double rr, gg, bb, aa;
+    tcs_byte *rgba;
+    if (!src) return tcs_error_null_pointer;
+	xScale = targetWidth / (double)width;
+	yScale = targetHeight / (double)height;
+    rgba = (tcs_byte *)malloc(targetHeight * (targetWidth << 2) * sizeof(tcs_byte));
+    for (h = 0; h < targetHeight; h ++) {
+		fy = h / yScale;
+		iy = (int)fy;
+		for (w = 0; w < targetWidth; w ++) {
+			fx = w / xScale;
+			ix = (int)fx;
+			rr = 0;
+            gg = 0;
+            bb = 0;
+            aa = 0;
+			for (m = 0; m < 4; m ++) {
+                yy = iy + m - 1;
+				r1 = _libtcs_filter_BSpline(yy - fy);
+				if (yy < 0) yy = 0;
+				if (yy >= height) yy = height - 1;
+				for (n = 0; n < 4; n ++) {
+					xx = ix + n - 1;
+					r2 = r1 * _libtcs_filter_BSpline(xx - fx);
+					if (xx < 0) xx = 0;
+					if (xx >= width) xx = width - 1;
+                    index = (yy * width + xx) << 2;
+					rr += src[index] * r2;
+					gg += src[index + 1] * r2;
+					bb += src[index + 2] * r2;
+					aa += src[index + 3] * r2;
+				}
+			}
+            if (rr > 255) rr = 255;
+            if (rr < 0) rr = 0;
+            if (gg > 255) gg = 255;
+            if (gg < 0) gg = 0;
+            if (bb > 255) bb = 255;
+            if (bb < 0) bb = 0;
+            if (aa > 255) aa = 255;
+            if (aa < 0) aa = 0;
+            index = (h * targetWidth + w) << 2;
+			rgba[index] = (unsigned char)rr;
+			rgba[index + 1] = (unsigned char)gg;
+			rgba[index + 2] = (unsigned char)bb;
+			rgba[index + 3] = (unsigned char)aa;
+		}
+	}
+    *pRGBA = rgba;
     return tcs_error_success;
 }
 
