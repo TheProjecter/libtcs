@@ -596,12 +596,12 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
             aa = 0;
 			for (m = 0; m < 4; m ++) {
                 yy = iy + m - 1;
-				r1 = _libtcs_filter_BSpline(yy - fy);
+				r1 = _libtcs_filter_cubic(yy - fy, -0.5);
 				if (yy < 0) yy = 0;
 				if (yy >= height) yy = height - 1;
 				for (n = 0; n < 4; n ++) {
 					xx = ix + n - 1;
-					r2 = r1 * _libtcs_filter_BSpline(xx - fx);
+					r2 = r1 * _libtcs_filter_cubic(xx - fx, -0.5);
 					if (xx < 0) xx = 0;
 					if (xx >= width) xx = width - 1;
                     index = (yy * width + xx) << 2;
