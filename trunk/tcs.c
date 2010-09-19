@@ -456,7 +456,7 @@ TCS_Error_Code libtcs_convert_chunk_to_rgba(const TCS_pChunk pChunk, tcs_u16 wid
     tcs_byte r, g, b, a, r0, g0, b0, a0, A;
     tcs_byte *rgba;
     if (!pChunk) return tcs_error_null_pointer;
-    pitch = width << 2;
+    pitch = (width << 2) * sizeof(tcs_byte);
     size = height * pitch;
     rgba = (tcs_byte *)malloc(size);
     memset(rgba, 0, size);
@@ -520,7 +520,7 @@ static void _libtcs_resample_rgba_deprecated(const tcs_byte *src, tcs_u16 width,
     tcs_u32 pitch, targetPitch, targetSize, Sx, Sy, Dx, Dy;
     tcs_byte *dst;
     pitch = width << 2;
-    targetPitch = targetWidth << 2;
+    targetPitch = (targetWidth << 2) * sizeof(tcs_byte);
     targetSize = targetHeight * targetPitch;
     dst = (tcs_byte *)malloc(targetSize);
     for (h = 0; h < targetHeight; h ++) {
@@ -888,7 +888,7 @@ TCS_Error_Code libtcs_create_tcs_frame(TCS_pFile pFile, const TCS_pHeader pHeade
     if (!pFile || !pHeader) return tcs_error_null_pointer;
     width = GETPOSX(pHeader->resolution);
     height = GETPOSY(pHeader->resolution);
-    pitch = width << 2;
+    pitch = (width << 2) * sizeof(tcs_byte);
     size = height * pitch;
     rgba = (tcs_byte *)malloc(size);
     memset(rgba, 0, size);
@@ -955,7 +955,7 @@ static void _libtcs_convert_chunks_flag_1_to_2_with_ms(TCS_pFile pFile, const TC
     parsedChunk.layer_and_count = MAKECL(0, 0);
     width = GETPOSX(pHeader->resolution);
     height = GETPOSY(pHeader->resolution);
-    pitch = width << 2;
+    pitch = (width << 2) * sizeof(tcs_byte);
     size = height * pitch;
     rgba = (tcs_byte *)malloc(size);
     memset(rgba, 0, size);
@@ -982,7 +982,7 @@ static void _libtcs_convert_chunks_flag_1_to_2_with_fps(TCS_pFile pFile, const T
     parsedChunk.layer_and_count = MAKECL(0, 0);
     width = GETPOSX(pHeader->resolution);
     height = GETPOSY(pHeader->resolution);
-    pitch = width << 2;
+    pitch = (width << 2) * sizeof(tcs_byte);
     size = height * pitch;
     rgba = (tcs_byte *)malloc(size);
     memset(rgba, 0, size);
