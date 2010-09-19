@@ -515,23 +515,21 @@ TCS_Error_Code libtcs_convert_chunks_to_rgba(const TCS_pChunk pChunk, tcs_u16 wi
     return tcs_error_success;
 }
 
-/*
-TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight) {
+static void _libtcs_resample_rgba_deprecated(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight) {
     tcs_u16 h, w;
     tcs_u32 pitch, targetPitch, targetSize, Sx, Sy, Dx, Dy;
     tcs_byte *dst;
-    if (!src) return tcs_error_null_pointer;
     pitch = width << 2;
     targetPitch = targetWidth << 2;
     targetSize = targetHeight * targetPitch;
     dst = (tcs_byte *)malloc(targetSize);
     for (h = 0; h < targetHeight; h ++) {
-        Dy = h * targetPitch;    /* Destination buffer postion-y 
-        Sy = (h * height / targetHeight) * pitch;  /* Source buffer postion-y 
+        Dy = h * targetPitch;    /* Destination buffer postion-y */
+        Sy = (h * height / targetHeight) * pitch;  /* Source buffer postion-y */
         for (w = 0; w < targetWidth; w ++) {
-            Dx = w << 2;       /* Destination buffer postion-x 
-            Sx = (w * width / targetWidth) << 2;    /* Source buffer postion-x 
-            if (0 != src[Sy + Sx + 3]) {             /* we predict that there are a lot of transparent pixels 
+            Dx = w << 2;       /* Destination buffer postion-x */
+            Sx = (w * width / targetWidth) << 2;    /* Source buffer postion-x */
+            if (0 != src[Sy + Sx + 3]) {             /* we predict that there are a lot of transparent pixels */
                 dst[Dy + Dx]     = src[Sy + Sx];
                 dst[Dy + Dx + 1] = src[Sy + Sx + 1];
                 dst[Dy + Dx + 2] = src[Sy + Sx + 2];
@@ -540,9 +538,7 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
         }
     }
     *pRGBA = dst;
-    return tcs_error_success;
 }
-*/
 
 static double _libtcs_filter_MitchellNetravali(double x, double b, double c) {
     double p0, p2, p3, q0, q1, q2, q3;
