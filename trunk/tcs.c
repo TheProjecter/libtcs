@@ -566,51 +566,51 @@ static double _libtcs_filter_cubic(double x, double a) {
 
 static double _libtcs_filter_BSpline(double x) {
     if (x < -2) return 0;
-	else if (x < -1) return (2 + x) * (2 + x) * (2 + x) / 6.0;
-	else if (x < 0) return (4 + (-6 - 3 * x) * x * x) / 6.0;
-	else if (x < 1) return (4 + (-6 + 3 * x) * x * x) / 6.0;
-	else if (x < 2) return (2 - x) * (2 - x) * (2 - x) / 6.0;
-	else return 0;
+    else if (x < -1) return (2 + x) * (2 + x) * (2 + x) / 6.0;
+    else if (x < 0) return (4 + (-6 - 3 * x) * x * x) / 6.0;
+    else if (x < 1) return (4 + (-6 + 3 * x) * x * x) / 6.0;
+    else if (x < 2) return (2 - x) * (2 - x) * (2 - x) / 6.0;
+    else return 0;
 }
 
 TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 height, tcs_byte **pRGBA, tcs_u16 targetWidth, tcs_u16 targetHeight) {
-	int h, w, m, n, index;
-	double fx, fy;
+    int h, w, m, n, index;
+    double fx, fy;
     int ix, iy, xx, yy;
-	double xScale, yScale, r1, r2;
+    double xScale, yScale, r1, r2;
     double rr, gg, bb, aa;
     tcs_byte *rgba;
     if (!src) return tcs_error_null_pointer;
-	xScale = targetWidth / (double)width;
-	yScale = targetHeight / (double)height;
+    xScale = targetWidth / (double)width;
+    yScale = targetHeight / (double)height;
     rgba = (tcs_byte *)malloc(targetHeight * (targetWidth << 2) * sizeof(tcs_byte));
     for (h = 0; h < targetHeight; h ++) {
-		fy = h / yScale;
-		iy = (int)fy;
-		for (w = 0; w < targetWidth; w ++) {
-			fx = w / xScale;
-			ix = (int)fx;
-			rr = 0;
+        fy = h / yScale;
+        iy = (int)fy;
+        for (w = 0; w < targetWidth; w ++) {
+            fx = w / xScale;
+            ix = (int)fx;
+            rr = 0;
             gg = 0;
             bb = 0;
             aa = 0;
-			for (m = 0; m < 4; m ++) {
+            for (m = 0; m < 4; m ++) {
                 yy = iy + m - 1;
-				r1 = _libtcs_filter_cubic(yy - fy, -0.5);
-				if (yy < 0) yy = 0;
-				if (yy >= height) yy = height - 1;
-				for (n = 0; n < 4; n ++) {
-					xx = ix + n - 1;
-					r2 = r1 * _libtcs_filter_cubic(xx - fx, -0.5);
-					if (xx < 0) xx = 0;
-					if (xx >= width) xx = width - 1;
+                r1 = _libtcs_filter_cubic(yy - fy, -0.5);
+                if (yy < 0) yy = 0;
+                if (yy >= height) yy = height - 1;
+                for (n = 0; n < 4; n ++) {
+                    xx = ix + n - 1;
+                    r2 = r1 * _libtcs_filter_cubic(xx - fx, -0.5);
+                    if (xx < 0) xx = 0;
+                    if (xx >= width) xx = width - 1;
                     index = (yy * width + xx) << 2;
-					rr += src[index] * r2;
-					gg += src[index + 1] * r2;
-					bb += src[index + 2] * r2;
-					aa += src[index + 3] * r2;
-				}
-			}
+                    rr += src[index] * r2;
+                    gg += src[index + 1] * r2;
+                    bb += src[index + 2] * r2;
+                    aa += src[index + 3] * r2;
+                }
+            }
             if (rr > 255) rr = 255;
             if (rr < 0) rr = 0;
             if (gg > 255) gg = 255;
@@ -620,12 +620,12 @@ TCS_Error_Code libtcs_resample_rgba(const tcs_byte *src, tcs_u16 width, tcs_u16 
             if (aa > 255) aa = 255;
             if (aa < 0) aa = 0;
             index = (h * targetWidth + w) << 2;
-			rgba[index] = (unsigned char)rr;
-			rgba[index + 1] = (unsigned char)gg;
-			rgba[index + 2] = (unsigned char)bb;
-			rgba[index + 3] = (unsigned char)aa;
-		}
-	}
+            rgba[index] = (unsigned char)rr;
+            rgba[index + 1] = (unsigned char)gg;
+            rgba[index + 2] = (unsigned char)bb;
+            rgba[index + 3] = (unsigned char)aa;
+        }
+    }
     *pRGBA = rgba;
     return tcs_error_success;
 }
