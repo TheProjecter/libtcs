@@ -34,6 +34,7 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <locale.h>
 
 #define LIBTCS_VERSION 0x00006000    /**< High word of LIBTCS_VERSION indicates major libtcs version, and low word indicates minor version */
 #define LIBTCS_VER_STR "0.6"
@@ -79,7 +80,7 @@
 typedef int tcs_bool;    /**< -1 - error/fail, 0 - false, 1 - true */
 
 /* These types are used to describe TCS file data */
-typedef signed __int64 tcs_s64;
+typedef long long int tcs_s64;
 typedef unsigned long tcs_u32;
 typedef unsigned short tcs_u16;
 typedef unsigned char tcs_u8;
