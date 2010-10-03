@@ -45,6 +45,7 @@ TCS_Error_Code libtcs_open_file(TCS_pFile pFile, const char *filename, TCS_File_
 }
 
 TCS_Error_Code libtcs_open_file_w(TCS_pFile pFile, const wchar_t *filename, TCS_File_Open_Type type) {
+#if defined WIN32
     if (!pFile) return tcs_error_null_pointer;
     if (tcs_file_open_existing == type) {
         pFile->fp = _wfopen(filename, L"rb");    /* file should open in binary mode */
@@ -52,11 +53,34 @@ TCS_Error_Code libtcs_open_file_w(TCS_pFile pFile, const wchar_t *filename, TCS_
     } else if (tcs_file_create_new == type) {
         pFile->fp = _wfopen(filename, L"wb");    /* file should open in binary mode */
         if (!pFile->fp) return tcs_error_file_cant_create;
-    } else if (tcs_file_read_write == type) {
+    } else {    /* if (tcs_file_read_write == type) */
         pFile->fp = _wfopen(filename, L"r+b");    /* file should open in binary mode */
         if (!pFile->fp) return tcs_error_file_cant_open;
     }
     return tcs_error_success;
+#else
+    int len;
+    char *str;
+    if (!pFile) return tcs_error_null_pointer;
+    setlocale(LC_ALL, "");
+    len = wcstombs(NULL, filename, 0);
+    str = (char *)malloc((len + 1) * sizeof(char));
+    wcstombs(str, filename, len + 1);
+    if (tcs_file_open_existing == type) {
+        pFile->fp = fopen(str, "rb");    /* file should open in binary mode */
+        free(str);
+        if (!pFile->fp) return tcs_error_file_cant_open;
+    } else if (tcs_file_create_new == type) {
+        pFile->fp = fopen(str, "wb");    /* file should open in binary mode */
+        free(str);
+        if (!pFile->fp) return tcs_error_file_cant_create;
+    } else {    /* if (tcs_file_read_write == type) */
+        pFile->fp = fopen(str, "r+b");    /* file should open in binary mode */
+        free(str);
+        if (!pFile->fp) return tcs_error_file_cant_open;
+    }
+    return tcs_error_success;
+#endif
 }
 
 TCS_Error_Code libtcs_close_file(TCS_pFile pFile) {
@@ -197,10 +221,10 @@ TCS_Error_Code libtcs_read_chunk(TCS_pFile pFile, TCS_pChunk pChunk) {
 TCS_Error_Code libtcs_read_specified_chunk(TCS_pFile pFile, tcs_s64 offset, TCS_pChunk pChunk) {
     tcs_u32 count;
     if (!pFile) return tcs_error_null_pointer;
-#ifdef __GNUC__
+#if defined __GNUC__
         fseeko64(pFile->fp, offset, SEEK_SET);
 #else
-#   ifdef _MSC_VER
+#   if defined _MSC_VER
         _fseeki64(pFile->fp, offset, SEEK_SET);
 #   else
         fseek(pFile->fp, offset, SEEK_SET);
