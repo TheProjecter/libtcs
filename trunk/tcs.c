@@ -62,7 +62,7 @@ TCS_Error_Code libtcs_open_file_w(TCS_pFile pFile, const wchar_t *filename, TCS_
     int len;
     char *str;
     if (!pFile) return tcs_error_null_pointer;
-    setlocale(LC_ALL, "");
+    setlocale(LC_CTYPE, "");
     len = wcstombs(NULL, filename, 0);
     str = (char *)malloc((len + 1) * sizeof(char));
     wcstombs(str, filename, len + 1);
